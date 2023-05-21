@@ -9,27 +9,33 @@ use File::Slurp;
 use Crypt::OpenSSL::RSA;
 use feature qw(say);
 
-my %keys_info = ();
 
 sub generate_keys {
 
-    say "Insert RSA key passphrase []: ";
+    my %keys_info = ();
+
+    # Chiede la passphrase per le chiavi RSA
+    say "Insert RSA key passphrase (minimum five characters) []: ";
+    system("stty -echo");
     $keys_info{"Passphrase"} = <STDIN>;
+    system("stty echo");
     chomp $keys_info{"Passphrase"};
     if ($keys_info{"Passphrase"} eq "") {
         $keys_info{"Passphrase"} = "";
     }
 
     say "Insert RSA key passphrase again []: ";
+    system("stty -echo");
     my $passphrase = <STDIN>;
+    system("stty echo");
     chomp $passphrase;
     if ($passphrase ne $keys_info{"Passphrase"}) {
         say "Passphrase mismatch";
         exit 1;
-    } elsif ($keys_info{"Passphrase"} ne "") {
-        $keys_info{"Passphrase"} = $keys_info{"Passphrase"};
     }
 
+
+    # Crea le directories per le chiavi se non esistono 
     if (! -d "/etc/back/keys") {
         File::Path::mkpath("/etc/back/keys", 0, 2700);
     }
@@ -37,119 +43,115 @@ sub generate_keys {
         File::Path::mkpath("/etc/back/keys/old", 0, 2700);
     }
 
-    system("openssl rand -base64 128 > /etc/back/keys/passphrase.tmp");
-
-    say "Generating RSA key...";
-    $File::Find::prune = 1;  # Don't recurse.
+    # Genera la passphrase
+    system("openssl rand -base64 128 > /etc/back/keys/passphrase.tmp 2> /dev/null");
+    say "Passphrase generated";
+ 
+    # Rinomina le chiavi precedenti temporaneamente 
     File::Find::find(sub {
-        if ($_ =~ /.*\.(key|pub)/) {
-            File::Copy::copy("/etc/back/keys/" . $_, "/etc/back/keys/" . $_ . ".old");
-            unlink $_;
+        if ($_ =~ /(back|back.pub|\.master_key|passphrase)$/) {
+            rename $_, $_ . ".old";
         }
     }, "/etc/back/keys");
 
-    my $command = "openssl genrsa -out /etc/back/keys/back.key ";
+    # Genera le chiavi RSA
+    say "Generating RSA key...";
+    my $command = "ssh-keygen -f /etc/back/keys/back -b 2048 -m PEM -t rsa ";
     if ($keys_info{"Passphrase"} ne "") {
-        $command .= "-passout pass:" . $keys_info{"Passphrase"} . " ";
+        $command .= "-N " . $keys_info{"Passphrase"};
     }
-    $command .= "2048";
-    say $command;
-    if (system($command) == 0) {
-        $command = "openssl rsa -in /etc/back/keys/back.key ";
-        if ($keys_info{"Passphrase"} ne "") {
-            $command .= "-passin pass:" . $keys_info{"Passphrase"} . " ";
-        }
-        $command .= " -out /etc/back/keys/back.pub -pubout";
-        if (system($command) != 0) {
-            unlink "/etc/back/keys/back.key";
-            if (-e "/etc/back/keys/back.key.old") {
-                File::Copy::copy("/etc/back/keys/back.key.old", "/etc/back/keys/back.key");
-                unlink "/etc/back/keys/back.key.old";
-            }
-            if (-e "/etc/back/keys/back.pub.old") {
-                File::Copy::copy("/etc/back/keys/back.pub.old", "/etc/back/keys/back.pub");
-                unlink "/etc/back/keys/back.pub.old";
-                say "Error generating RSA key. Old keys restored.";
-            }
-            
-            say "Error generating RSA key";
-            exit 1;
-        }
-    } else {
-        if (-e "/etc/back/keys/back.key.old") {
-            File::Copy::copy("/etc/back/keys/back.key.old", "/etc/back/keys/back.key");
-            unlink "/etc/back/keys/back.key.old";
-        }
-        if (-e "/etc/back/keys/back.pub.old") {
-            File::Copy::copy("/etc/back/keys/back.pub.old", "/etc/back/keys/back.pub");
-            unlink "/etc/back/keys/back.pub.old";
-            say "Error generating RSA key. Old keys restored.";
-        }
+    $command .= " > /dev/null";
+    
+    if (system($command) == 0) { # Se la generazione delle chiavi è andata a buon fine
 
-        say "Error generating RSA key";
+        # Genera la chiave pubblica in formato PEM
+        $command = "ssh-keygen -f /etc/back/keys/back.pub -b 2048 -t rsa -e -m PEM";
+        if ($keys_info{"Passphrase"} ne "") {
+            $command .= " -N " . $keys_info{"Passphrase"};
+        }
+        $command .= " > /etc/back/keys/back.pub.pem 2> /dev/null";
+
+        if (system($command) != 0) { # Se la generazione della chiave pubblica PEM è fallita
+
+            # Ripristina le chiavi precedenti e termina
+            File::Find::find(sub {
+        if ($_ =~ /(back|back.pub|\.master_key|passphrase)$/) {
+                    rename $_ , substr($_, 0, -4);
+                }
+            }, "/etc/back/keys");
+
+            say "Error generating RSA key. If there is an old key, it has been restored.";
+            exit 1;        
+        }
+        rename "/etc/back/keys/back.pub.pem", "/etc/back/keys/back.pub";
+
+        # Crea il file con la passphrase in chiaro ma con permessi 0000
+        open(my $file, '>', "/etc/back/keys/.master_key") or die $!;
+        print $file $keys_info{"Passphrase"};
+        close($file);
+        chmod 0000, "/etc/back/keys/.master_key";
+    
+    } else { # Se la generazione delle chiavi è fallita
+
+        # Ripristina le chiavi precedenti e termina
+        File::Find::find(sub {
+                if ($_ =~ /(back|back.pub|\.master_key)\.old$/) {
+                rename $_ , substr($_, 0, -4);
+            }
+        }, "/etc/back/keys");
+
+        say "Error generating RSA key. If there is an old key, it has been restored.";
         exit 1;
     }
-    
-    File::Find::find(sub {
-        unlink $_;
-    }, "/etc/back/keys/old");
-    
-    File::Find::find(sub {
-        if ($_ =~ /.+key.old/) {
-            File::Copy::copy("/etc/back/keys/" . $_, "/etc/back/keys/old/key.old");
-            unlink $_;
-        } elsif ($_ =~ /.+pub.old/) {
-            File::Copy::copy("/etc/back/keys/" . $_, "/etc/back/keys/old/pub.old");
-            unlink $_;
-        } 
-    }, "/etc/back/keys");
+
+    # Se la generazione delle chiavi è andata a buon fine, elimina le chiavi precedenti    
+    rename "/etc/back/keys/back.old", "/etc/back/keys/old/back.old";
+    rename "/etc/back/keys/back.pub.old", "/etc/back/keys/old/back.pub.old";
+    rename "/etc/back/keys/.master_key.old", "/etc/back/keys/old/.master_key.old";
+    rename "/etc/back/keys/passphrase.old", "/etc/back/keys/old/passphrase.old";
 
     say "RSA key generated";
 
-    system("openssl pkeyutl -encrypt -pubin -inkey /etc/back/keys/back.pub -in /etc/back/keys/passphrase.tmp -out /etc/back/keys/passphrase");
+    # Crea il file con la passphrase cifrata (Digital Envelope)
+    system("openssl pkeyutl -encrypt -pubin -inkey /etc/back/keys/back.pub -in /etc/back/keys/passphrase.tmp -out /etc/back/keys/passphrase 2> /dev/null");
     unlink "/etc/back/keys/passphrase.tmp";
     say "Passphrase encrypted";
 
 }
 
+# Cifra un file con AES-256-CBC
 sub encrypt {
-
     my $name = $_[0];
-    my $pub = "";
+    system("openssl enc -aes-256-cbc -pbkdf2 -in " . $name . " -out " . $name . ".enc -pass pass:" . get_passphrase() . " 2> /dev/null");
+    unlink $name;
+}
 
-    open(my $file, '<', "/etc/back/keys/back.pub") or die $!;
+# Decifra un file con AES-256-CBC
+sub decrypt {
+    my $name = $_[0];
+    system("openssl enc -aes-256-cbc -pbkdf2 -d -in " . $name . " -out " . substr($name, 0, -4) . " -pass pass:" . get_passphrase() . " 2> /dev/null");
+    unlink $name;
+}
+
+# Ottiene la passphrase per le chiavi RSA
+sub get_passphrase {
+
+    open(my $file, '<', "/etc/back/keys/.master_key") or die $!;
+    my $master_key = read_file($file);
+    close($file);
+    
+    open( $file, '<', "/etc/back/keys/back.pub") or die $!;
     my $public = read_file($file);
     close($file);
 
-    system("openssl pkeyutl -decrypt -inkey /etc/back/keys/back.key -in /etc/back/keys/passphrase -out /tmp/passphrase");
+    system("openssl pkeyutl -decrypt -inkey /etc/back/keys/back -in /etc/back/keys/passphrase -passin pass:" . $master_key . " -out /tmp/passphrase 2> /dev/null");
     open($file, '<', "/tmp/passphrase") or die $!;
     my $passphrase = read_file($file);
     close($file);
     unlink "/tmp/passphrase";
 
-    system("openssl enc -aes-256-cbc -pbkdf2 -in " . $name . " -out " . $name . ".enc -pass pass:" . $passphrase);
-    unlink $name;
-
-}
-
-sub decrypt {
-    my $name = $_[0];
-    my $key = "";
-
-    open(my $file, '<', "/etc/back/keys/back.key") or die $!;
-    my $private = read_file($file);
-    close($file);
-
-    system("openssl pkeyutl -decrypt -inkey /etc/back/keys/back.key -in /etc/back/keys/passphrase -out /tmp/passphrase");
-    open($file, '<', "/tmp/passphrase") or die $!;
-    my $passphrase = read_file($file);
-    close($file);
-    #unlink "/tmp/passphrase";
-
-    system("openssl enc -aes-256-cbc -pbkdf2 -d -in " . $name . " -out " . substr($name, 0, -4) . " -pass pass:" . $passphrase);
-    unlink $name;
+    $passphrase =~ s/\n//g;
+    return $passphrase;
 
 }
 1;
-decrypt("21-5-2023-3-47-35.zip.enc");
-#generate_keys();
