@@ -1,4 +1,6 @@
 package zip;
+
+use Archive::Zip;
 use strict;
 use warnings;
 use JSON;
@@ -14,7 +16,11 @@ sub make_backup {
         $name .= $elem . "-"
     }
     $name .= $date[5];
-    $archive->writeToFileNamed("$name.zip")
+    if ($archive->writeToFileNamed("$name.zip") == 0) {
+        return $name.".zip";
+    } else {
+        return undef;
+    }
 }
 
 sub getDate {
