@@ -1,4 +1,4 @@
-package commands::users;
+package commands::user;
 
 use warnings;
 use strict;
@@ -7,35 +7,89 @@ use Switch;
 use JSON;
 
 no warnings 'experimental';
-my @accepted_commands = ("ls");
 
 sub parse {
     my $command = shift @_ || "";
 
     switch ($command) {
-        case "ls" { return ls(@_); }
-        case "" { return "No command given for \"users\"\n"; }
-        else { return "Command not accepted in \"users\" functionalities: $command\n"; exit 1; }
+        case "ls" {
+            return ls(@_);
+        }
+        case "add" { 
+            my $err = add(@_);
+            switch ($err) {
+                case 0 { return "User added successfully\n"; }
+                case 1 { return "No user given\n"; }
+                case 2 { return "User does not exist in the system\n"; }
+                case 3 { return "Impossible to add a system user\n"; }
+                case 4 { return "User already exists\n"; }
+                else { return $err; }
+            }
+        }
+        case "del" {
+            my $err = del(@_);
+            switch ($err) {
+                case 0 { return "User deleted successfully\n"; }
+                case 1 { return "No user given\n"; }
+                case 2 { return "User does not exist in the system\n"; }
+                case 3 { return "User does not exist in Back-a-la system\n"; }
+                else { return $err; }
+            }
+        }
+        case "up" {
+            my $err = up(@_);
+            switch ($err) {
+                case 0 { return "User activated successfully\n"; }
+                case 1 { return "No user given\n"; }
+                case 2 { return "User does not exist in the system\n"; }
+                case 3 { return "User does not exist in Back-a-la system\n"; }
+                case 4 { return "User's backup already active\n"; }
+                else { return $err; }
+            }
+        }
+        case "down" {
+            my $err = down(@_);
+            switch ($err) {
+                case 0 { return "User deactivated successfully\n"; }
+                case 1 { return "No user given\n"; }
+                case 2 { return "User does not exist in the system\n"; }
+                case 3 { return "User does not exist in Back-a-la system\n"; }
+                case 4 { return "User's backup already inactive\n"; }
+                else { return $err; }
+            }
+        }
+        case "" { return "No command given for \"user\"\n"; }
+        else { return "Command not accepted in \"user\" functionalities: $command\n"; exit 1; }
     }
 }
 
 sub ls {
-    my @accepted_options = ("-a");  # AGGIUNGERE QUA OPZIONI PER LS
-    my %options = (all => 0);       # AGGIUNGERE QUA FLAGS PER LS
+    my %options = ( # AGGIUNGERE QUA FLAGS PER LS
+        all => 0,
+        quiet => 0
+    );
     foreach my $option (@_) {
         switch ($option) {      # AGGIUNGERE QUA LE MODIFICHE AI FLAG PER LS
-            case /^(-a|--all)$/ { $options{all} = 1; } 
-            else { return "Option not accepted in \"users ls\" funcionalities: $option\n"; exit 1; }
+            case qr/^(-a|--all)$/ { $options{all} = 1; }
+            case qr/^(-q|--quiet)$/ { $options{quiet} = 1; }
+            else { return "Usage: user ls [OPTION]\n" .
+                "List all the users for which a backup is or can be performed.\n" .
+                "  -a, --all\t\t\tList all the users, even the inactive ones\n" .
+                "  -q, --quiet\t\t\tPrint only the users' ids\n" .
+                "  -h, --help\t\t\tDisplay this help and exit\n";
+            }
         }
     }
+
     my @ids = ();
+    my $json_data = read_user_json();
+    my $table = undef;
 
-    open(my $json_file, '<', '/etc/back/users.json') or die $!;
-    my $json_text = join('', <$json_file>);
-    close($json_file);
-    my $json_data = decode_json($json_text);
-
-    my $table = Text::Table->new("USER", "NAME", "DIRECTORIES", "ACTIVE");
+    if (!$options{quiet}) {
+        $table = Text::Table->new("USER", "NAME", "DIRECTORIES", "ACTIVE");
+    } else {
+        $table = Text::Table->new();
+    }
     foreach my $user (keys $json_data->%*) {
         push @ids, $user;
     }
@@ -44,30 +98,169 @@ sub ls {
         my $directories = join(",\n", $json_data->{$user}->{"directories"}->@*);
         my $name = `grep 'x:$user:' /etc/passwd | cut -d ':' -f 1`;
             if ($options{all} || $json_data->{$user}->{"active"} eq "true") {
-                $table->add($user, $name, $directories, $json_data->{$user}->{"active"});
+                if ($options{quiet}) {
+                    $table->add($user);
+                } else {
+                    $table->add($user, $name, $directories, $json_data->{$user}->{"active"});
+                }
             }
     }
     return $table;
 }
 
 sub add {
-    my $user = shift @_;
+    my $user = shift @_ || "";
+    my $help = "Usage: user add [USER]\n" .
+            "Add a user to the list of users for which a backup is or can be performed.\n" .
+            "  It does not accept any option.\n" .
+            "  -h, --help\t\t\tDisplay this help and exit\n";
+    my $not_exist = undef;
+    my $json_data = read_user_json();
 
-    open(my $json_file, '<', '/etc/back/users.json') or die $!;
-    my $json_text = join('', <$json_file>);
-    close($json_file);
-    my $json_data = decode_json($json_text);
+    if ($user =~ /^-.*/) {
+        return $help;
+    }
+
+    if ($user eq "") {
+        return 1;
+    }
+    $user = `grep '^$user:' /etc/passwd | cut -d ':' -f 3`;
+
+    if ($user eq "") {
+        return 2;
+    } elsif ($user + 0 < 1000) {
+        return 3;
+    }
+    chomp $user;
 
     if (exists $json_data->{$user}) {
-        return "User already exists\n";
-        exit 1;
+        return 4;  
     } else {
         $json_data->{$user} = {
             "directories" => [],
             "active" => "false"
         };
         open(my $json_file, '>', '/etc/back/users.json') or die $!;
-        print $json_file encode_json($json_data);
+        print $json_file JSON->new->ascii->pretty->encode($json_data);
         close($json_file);
+        return 0;
     }
 }
+
+sub del {
+    my $user = shift @_ || "";
+    my $help = "Usage: user del [USER]\n" .
+            "Delete a user from the list of users for which a backup is or can be performed.\n" .
+            "  It does not accept any option.\n" .
+            "  -h, --help\t\t\tDisplay this help and exit\n";
+    my $not_exist = undef;
+    my $json_data = read_user_json();
+
+    if ($user =~ /^-.*/) {
+        return $help;
+    }
+
+    if ($user eq "") {
+        return 1;
+    }
+    $user = `grep '^$user:' /etc/passwd | cut -d ':' -f 3`;
+    if ($user eq "") {
+        return 2;
+    }
+    chomp $user;
+
+    if (! exists $json_data->{$user}) {
+        return 3;
+    } else {
+        delete $json_data->{$user};
+        open(my $json_file, '>', '/etc/back/users.json') or die $!; 
+        truncate $json_file, 0;
+        print $json_file JSON->new->ascii->pretty->encode($json_data);
+        close($json_file);
+        return 0;
+    }
+}
+
+sub up {
+    my $user = shift @_ || "";
+    my $help = "Usage: user up [USER]\n" .
+            "Activate backup for a user.\n" .
+            "  It does not accept any option.\n" .
+            "  -h, --help\t\t\tDisplay this help and exit\n";
+
+    if ($user =~ /^-.*/) {
+        return $help;
+    }
+
+    if ($user eq "") {
+        return 1;
+    }
+    $user = `grep '^$user:' /etc/passwd | cut -d ':' -f 3`;
+    if ($user eq "") {
+        return 2;
+    }
+    chomp $user;
+
+    my $json_data = read_user_json();
+
+    if (! exists $json_data->{$user}) {
+        return 3;
+    } elsif ($json_data->{$user}->{"active"} eq "true") {
+        return 4;
+    } else {
+        $json_data->{$user}->{"active"} = "true";
+        open(my $json_file, '>', '/etc/back/users.json') or die $!;
+        print $json_file JSON->new->ascii->pretty->encode($json_data);
+        close($json_file);
+        return 0;
+    }
+
+}
+
+sub down {
+    my $user = shift @_ || "";
+    my $help = "Usage: user down [USER]\n" .
+            "Deactivate backup for a user.\n" .
+            "  It does not accept any option.\n" .
+            "  -h, --help\t\t\tDisplay this help and exit\n";
+
+    if ($user =~ /^-.*/) {
+        return $help;
+    }
+
+    if ($user eq "") {
+        return 1;
+    }
+    $user = `grep '^$user:' /etc/passwd | cut -d ':' -f 3`;
+    if ($user eq "") {
+        return 2;
+    }
+    chomp $user;
+
+    my $json_data = read_user_json();
+
+    if (! exists $json_data->{$user}) {
+        return 3;
+    } elsif ($json_data->{$user}->{"active"} eq "false") {
+        return 4;
+    } else {
+        $json_data->{$user}->{"active"} = "false";
+        open(my $json_file, '>', '/etc/back/users.json') or die $!;
+        print $json_file JSON->new->ascii->pretty->encode($json_data);
+        close($json_file);
+        return 0;
+    }
+
+
+}
+
+sub read_user_json {
+    open(my $json_file, '<', '/etc/back/users.json') or die $!;
+    my $json_text = join('', <$json_file>);
+    close($json_file);
+    my $json_data = decode_json($json_text);
+
+    return $json_data;
+}
+
+1;

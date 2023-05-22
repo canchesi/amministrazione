@@ -1,3 +1,5 @@
+package interface;
+
 require './commands/users.pm';
 require './lib/conn.pm';
 use strict;
@@ -33,11 +35,9 @@ sub command_handler {
     switch ($command) {
         case "--help" {} # TODO DA SISTEMARE
         case /^(-v|--version)$/ { $response = "Back-a-la 0.1.0"; }
-        case "users" { $response = commands::users::parse(@commands); }
+        case "user" { $response = commands::user::parse(@commands); }
         case "" { $response = "No command given"; }
         else { $response = "Command not found"; }
     }
     return $response;
 }
-
-interface();
