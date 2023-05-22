@@ -122,15 +122,21 @@ sub generate_keys {
 # Cifra un file con AES-256-CBC
 sub encrypt {
     my $name = $_[0];
-    system("openssl enc -aes-256-cbc -pbkdf2 -in " . $name . " -out " . $name . ".enc -pass pass:" . get_passphrase() . " 2> /dev/null");
+    if (system("openssl enc -aes-256-cbc -pbkdf2 -in " . $name . " -out " . $name . ".enc -pass pass:" . get_passphrase()) != 0) {
+        return undef;
+    }
     unlink $name;
+    return 0;
 }
 
 # Decifra un file con AES-256-CBC
 sub decrypt {
     my $name = $_[0];
-    system("openssl enc -aes-256-cbc -pbkdf2 -d -in " . $name . " -out " . substr($name, 0, -4) . " -pass pass:" . get_passphrase() . " 2> /dev/null");
+    if (system("openssl enc -aes-256-cbc -pbkdf2 -d -in " . $name . " -out " . substr($name, 0, -4) . " -pass pass:" . get_passphrase()) != 0) {
+        return undef;
+    }
     unlink $name;
+    return 0;
 }
 
 # Ottiene la passphrase per le chiavi RSA

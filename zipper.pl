@@ -19,7 +19,10 @@ foreach my $user (keys $json_data->%*) {
     if ($backup == undef) {
         exit 1;
     } else {
-        crypt::encrypt($backup);
-
+        if (crypt::encrypt($backup) == undef) {
+            exit 1;
+        } else {
+            exit 0;
+        }
     }
 }
