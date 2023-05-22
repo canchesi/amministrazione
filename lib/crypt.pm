@@ -122,7 +122,7 @@ sub generate_keys {
 # Cifra un file con AES-256-CBC
 sub encrypt {
     my $name = $_[0];
-    if (system("openssl enc -aes-256-cbc -pbkdf2 -in " . $name . " -out " . $name . ".enc -pass pass:" . get_passphrase()) != 0) {
+    if (system("openssl enc -aes-256-cbc -pbkdf2 -in /tmp/." . $name . " -out " . $name . ".enc -pass pass:" . get_passphrase()) != 0) {
         return undef;
     }
     unlink $name;

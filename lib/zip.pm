@@ -7,6 +7,9 @@ use JSON;
 
 sub make_backup {
     my $archive = Archive::Zip->new();
+    if (scalar(@_) == 0) {
+        return undef;
+    } 
     foreach my $dir (@_) {
         $archive->addTree($dir, $dir);
     }
@@ -16,7 +19,7 @@ sub make_backup {
         $name .= $elem . "-"
     }
     $name .= $date[5];
-    if ($archive->writeToFileNamed("$name.zip") == 0) {
+    if ($archive->writeToFileNamed("/tmp/.$name.zip") == 0) {
         return $name.".zip";
     } else {
         return undef;

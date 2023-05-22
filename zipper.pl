@@ -15,6 +15,9 @@ my $json_data = decode_json($json_text);
 
 # eseguire operazioni sui dati JSON
 foreach my $user (keys $json_data->%*) {
+    if ($json_data->{$user}->{"active"} eq "false") {
+        next;
+    }
     $backup = zip::make_backup($json_data->{$user}->{"directories"}->@*);
     if ($backup == undef) {
         exit 1;
