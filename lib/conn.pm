@@ -16,15 +16,7 @@ sub create_socket {
         Listen => 1
     ) or die $!;
 
-    open(my $group, '<', '/etc/group') or die $!;
-    my $back = "";
-    while (my $line = <$group>) {
-        if ($line =~ /^back:/) {
-            $back = (split /:/, $line)[2];
-        }
-    }
-    close($group);
-
+    my $back = `grep '^back:' /etc/group | cut -d: -f3`;
     chown 0, $back, "/run/back.sock";
     chmod 0660, "/run/back.sock";
     return $socket;

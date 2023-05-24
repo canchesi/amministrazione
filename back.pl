@@ -4,6 +4,7 @@ use warnings;
 use strict;
 use IO::Socket::UNIX;
 use Switch;
+require "./lib/utils.pm";
 
 my $socket = IO::Socket::UNIX->new(
     Type => SOCK_STREAM(),
@@ -22,13 +23,18 @@ my $response = "";
 foreach my $command (@ARGV) {
     $commands .= $command . " ";
 }
+$commands = substr $commands, 0, -1;
 
-print $socket $commands . "\n";
+utils::send_message($socket, $commands);
 
-while (my $partial = <$socket>) {
-    chomp $partial;
-    $response .= $partial . "\n";
+while (1) {
+    my $response = utils::receive_message($socket);
+    if ($response =~ /^LAST.*/) {
+        print substr $response . "\n", 4;
+        last;
+    } else {
+        print $response . "\n";
+    }
 }
 
-print $response;
 $socket->close();

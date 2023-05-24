@@ -105,7 +105,7 @@ sub ls {
                 }
             }
     }
-    return $table;
+    return $table->stringify;
 }
 
 sub add {
