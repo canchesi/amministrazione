@@ -14,7 +14,7 @@ use feature qw(say);
 sub encrypt {
     my $name = $_[0];
     if (system("openssl enc -aes-256-cbc -pbkdf2 -in /tmp/." . $name . " -out " . $name . ".enc -pass pass:" . get_passphrase()) != 0) {
-        return undef;
+        return 1;
     }
     unlink $name;
     return 0;
@@ -51,4 +51,5 @@ sub get_passphrase {
     return $passphrase;
 
 }
+#decrypt("25-5-2023-20-27-8.zip.enc");
 1;

@@ -57,7 +57,7 @@ sub keygen {
     #chomp $keys_info{"Passphrase"};
 
     if (length $keys_info{"Passphrase"} < 5 && $keys_info{"Passphrase"} ne "") {
-        utils::send_message($connection, "Passphrase too short. Minimum five characters", 1024, 1);
+        utils::send_message($connection, "Passphrase too short. Minimum five characters", 1);
         return "1";
     }
 
@@ -132,6 +132,6 @@ sub keygen {
     # Crea il file con la passphrase cifrata (Digital Envelope)
     system("openssl pkeyutl -encrypt -pubin -inkey /etc/back/keys/back.pub -in /etc/back/keys/passphrase.tmp -out /etc/back/keys/passphrase 2> /dev/null");
     unlink "/etc/back/keys/passphrase.tmp";
-    utils::send_message($connection, "Passphrase generated", 1024, 1);
+    utils::send_message($connection, "Passphrase generated", 1);
 
 }

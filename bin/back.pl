@@ -29,8 +29,9 @@ utils::send_message($socket, $commands);
 
 while (1) {
     my $response = utils::receive_message($socket);
-    if ($response =~ /^LAST.*/) {
-        print substr $response . "\n", 4;
+    if ($response =~ /.*LAST$/) {
+        $response = substr $response, 0, -4;
+        print $response . "\n";
         last;
     } else {
         print $response . "\n";

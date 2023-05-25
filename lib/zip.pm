@@ -7,10 +7,12 @@ use JSON;
 
 sub make_backup {
     my $archive = Archive::Zip->new();
-    if (scalar(@_) == 0) {
+    my @directories = $_[0]->@*;
+    if (scalar(@directories) == 0) {
         return undef;
     } 
-    foreach my $dir (@_) {
+    foreach my $dir (@directories) {
+        print $dir."\n";
         $archive->addTree($dir, $dir);
     }
     my @date = getDate();
@@ -22,7 +24,7 @@ sub make_backup {
     if ($archive->writeToFileNamed("/tmp/.$name.zip") == 0) {
         return $name.".zip";
     } else {
-        return undef;
+        return 1;
     }
 }
 

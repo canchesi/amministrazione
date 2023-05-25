@@ -5,11 +5,19 @@ use strict;
 use Text::Table;
 use Switch;
 use JSON;
+require "./lib/utils.pm";
 
 no warnings 'experimental';
 
 sub parse {
     my $command = shift @_ || "";
+    my $help = "Usage: user [COMMAND] [OPTIONS]\n" .
+               "Commands: \n" .
+               "  ls\t\t\tList all the users for which a backup is or can be performed\n" .
+               "  add\t\t\tAdd a user to the list of users for which a backup is or can be performed\n" .
+               "  del\t\t\tDelete a user from the list of users for which a backup is or can be performed\n" .
+               "  up\t\t\tActivate backup for a user\n" .
+               "  down\t\t\tDeactivate backup for a user\n";
 
     switch ($command) {
         case "ls" {
@@ -58,8 +66,7 @@ sub parse {
                 else { return $err; }
             }
         }
-        case "" { return "No command given for \"user\"\n"; }
-        else { return "Command not accepted in \"user\" functionalities: $command\n"; exit 1; }
+        else { return $help; }
     }
 }
 
@@ -82,7 +89,7 @@ sub ls {
     }
 
     my @ids = ();
-    my $json_data = read_user_json();
+    my $json_data = utils::read_user_json();
     my $table = undef;
 
     if (!$options{quiet}) {
@@ -115,7 +122,7 @@ sub add {
             "  It does not accept any option.\n" .
             "  -h, --help\t\t\tDisplay this help and exit\n";
     my $not_exist = undef;
-    my $json_data = read_user_json();
+    my $json_data = utils::read_user_json();
 
     if ($user =~ /^-.*/) {
         return $help;
@@ -154,7 +161,7 @@ sub del {
             "  It does not accept any option.\n" .
             "  -h, --help\t\t\tDisplay this help and exit\n";
     my $not_exist = undef;
-    my $json_data = read_user_json();
+    my $json_data = utils::read_user_json();
 
     if ($user =~ /^-.*/) {
         return $help;
@@ -201,7 +208,7 @@ sub up {
     }
     chomp $user;
 
-    my $json_data = read_user_json();
+    my $json_data = utils::read_user_json();
 
     if (! exists $json_data->{$user}) {
         return 3;
@@ -237,7 +244,7 @@ sub down {
     }
     chomp $user;
 
-    my $json_data = read_user_json();
+    my $json_data = utils::read_user_json();
 
     if (! exists $json_data->{$user}) {
         return 3;
@@ -253,14 +260,4 @@ sub down {
 
 
 }
-
-sub read_user_json {
-    open(my $json_file, '<', '/etc/back/users.json') or die $!;
-    my $json_text = join('', <$json_file>);
-    close($json_file);
-    my $json_data = decode_json($json_text);
-
-    return $json_data;
-}
-
 1;
