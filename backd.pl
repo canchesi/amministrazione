@@ -1,11 +1,11 @@
 require './scripts/interface.pm';
 
-use Thread;
+use threads;
 use IO::Socket::UNIX;
 
 my %functionalities = ();
 
-$functionalities{"interface"} = Thread->new(\&interface::interface);
+$functionalities{"interface"} = threads->create(\&interface::interface);
 
 
 $functionalities{"interface"}->join();
