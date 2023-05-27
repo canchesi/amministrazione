@@ -150,6 +150,7 @@ sub add {
         open(my $json_file, '>', '/etc/back/users.json') or die $!;
         print $json_file JSON->new->ascii->pretty->encode($json_data);
         close($json_file);
+        File::Path::make_path("/var/back-a-la/$user");
         return 0;
     }
 }

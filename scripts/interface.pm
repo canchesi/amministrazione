@@ -10,11 +10,9 @@ use strict;
 use warnings;
 use Switch;
 use JSON;
-use Thread;
+use threads;
 
 my $socket = conn::create_socket();
-my @conns = ();
-my @threads = ();
 $socket->autoflush;
 
 $SIG{TERM} = sub {};
@@ -22,9 +20,7 @@ $SIG{TERM} = sub {};
 sub interface {
     while (1) {
         my $connection = conn::accept_connection($socket);
-        my $thread = Thread->new(\&handle_connection, $connection);
-        push @conns, $connection;
-        push @threads, $thread;
+        my $thread = threads->create(\&handle_connection, $connection);
     }
 
 }
@@ -69,7 +65,7 @@ sub command_handler {
             $response = commands::keygen::keygen($connection, @commands);
         }
         case "backup" {
-            $response = commands::backup::backup($connection, @commands);
+            $response = commands::backup::parse($connection, @commands);
         }
     }
     return $response;

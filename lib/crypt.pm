@@ -51,5 +51,4 @@ sub get_passphrase {
     return $passphrase;
 
 }
-#decrypt("25-5-2023-20-27-8.zip.enc");
 1;

@@ -10,19 +10,15 @@ sub zip {
     my $user = shift || "";
     my $json_data = undef;
 
-    if ($user eq "") {
-        return 1;
-    }
-
     $json_data = utils::read_user_json($user);
     $backup = zip::make_backup($json_data);
     if ($backup == 1) {
-        return 1;
+        return (1, $user);
     } else {
         if (crypt::encrypt($backup) == 1) {
-            return 2;
+            return (2, $user);
         } else {
-            return 0;
+            return (0, $user);
         }
     }
 }

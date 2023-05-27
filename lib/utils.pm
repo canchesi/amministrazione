@@ -99,8 +99,8 @@ sub user_exists {
     my $user = shift || "";
     my $json_data = read_user_json();
     my $exists = 0;
-    
-    $exists = `grep '^$user:' /etc/passwd`;
+    $user = `id -u $user`;
+    $exists = `grep 'x:$user:' /etc/passwd`;
 
     if ($exists eq "") {
         return 2;
