@@ -24,11 +24,15 @@ sub encrypt {
 
 # Decifra un file con AES-256-CBC
 sub decrypt {
-    my $name = $_[0];
-    if (system("openssl enc -aes-256-cbc -pbkdf2 -d -in " . $name . " -out " . substr($name, 0, -4) . " -pass pass:" . get_passphrase()) != 0) {
-        return undef;
+    my $name = shift;
+    my $user = shift;
+    my $dir = "/var/back-a-la/" . `id -u $user`; chomp $dir;
+    if (! -f $dir . "/" . $name) {
+        return 2;
     }
-    unlink $name;
+    if (system("openssl enc -aes-256-cbc -pbkdf2 -d -in " . $dir . "/" . $name . " -out /tmp/." . substr($name, 0, -4) . " -pass pass:" . get_passphrase()) != 0) {
+        return 1;
+    }
     return 0;
 }
 

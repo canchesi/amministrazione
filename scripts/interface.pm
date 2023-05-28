@@ -3,6 +3,7 @@ package interface;
 require './commands/users.pm';
 require './commands/keygen.pm';
 require './commands/backup.pm';
+require './commands/restore.pm';
 require './lib/conn.pm';
 require './lib/utils.pm';
 
@@ -61,6 +62,9 @@ sub command_handler {
         }
         case "backup" {
             $response = commands::backup::parse($connection, @commands);
+        }
+        case "restore" {
+            $response = commands::restore::restore($connection, @commands);
         }
         else {
             $response = $help;

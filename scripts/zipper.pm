@@ -11,7 +11,7 @@ sub zip {
     my $json_data = undef;
 
     $json_data = utils::read_user_json($user);
-    $backup = zip::make_backup($json_data);
+    $backup = zip::make($json_data);
     if ($backup == 1) {
         return (1, $user);
     } else {

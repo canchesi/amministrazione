@@ -4,8 +4,9 @@ use Archive::Zip;
 use strict;
 use warnings;
 use JSON;
+use File::Finder;
 
-sub make_backup {
+sub make {
     my $archive = Archive::Zip->new();
     my @directories = $_[0]->@*;
     if (scalar(@directories) == 0) {
@@ -28,8 +29,23 @@ sub make_backup {
     }
 }
 
+sub extract {
+    my $name = shift;
+    my $user = shift;
+    my $zip = Archive::Zip->new();
+    if ($zip->read("/tmp/." . $name) != 0) {
+        return 1;
+    }
+    foreach my $member ($zip->members()) {
+        $zip->extractTree($member->fileName(), "/" . $member->fileName());
+        chown $user, $user, File::Finder->in("/" . $member->fileName());
+    }
+    return 0;
+
+}
+
 sub getDate {
     my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime();
-    return ($mday, $mon+1, $year+1900, $hour, $min, $sec);
+    return ($year+1900, $mon+1, $mday, $hour, $min, $sec);
 }
 1;
