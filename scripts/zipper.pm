@@ -15,7 +15,7 @@ sub zip {
     if ($backup == 1) {
         return (1, $user);
     } else {
-        if (crypt::encrypt($backup) == 1) {
+        if (crypt::encrypt($backup, $user) == 1) {
             return (2, $user);
         } else {
             return (0, $user);

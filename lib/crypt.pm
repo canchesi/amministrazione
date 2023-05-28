@@ -12,8 +12,10 @@ use feature qw(say);
 
 # Cifra un file con AES-256-CBC
 sub encrypt {
-    my $name = $_[0];
-    if (system("openssl enc -aes-256-cbc -pbkdf2 -in /tmp/." . $name . " -out " . $name . ".enc -pass pass:" . get_passphrase()) != 0) {
+    my $name = shift;
+    my $user = shift;
+    my $dir = "/var/back-a-la/" . `id -u $user`; chomp $dir;
+    if (system("openssl enc -aes-256-cbc -pbkdf2 -in /tmp/." . $name . " -out " . $dir . "/" . $name . ".enc -pass pass:" . get_passphrase()) != 0) {
         return 1;
     }
     unlink $name;
