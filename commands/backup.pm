@@ -98,9 +98,9 @@ sub ls {
         foreach my $dir ($json_data->{$users{ids}[$i]}->{"directories"}->@*) {
             $dirs .= $dir . "\n";
         } chomp $dirs;
-        foreach (my $i = 0; $i < scalar @backups; $i++) {
-            $dates .= $i+1 . ") " . get_date($backups[$i]) . "\n";
-        } chomp $dates;
+        foreach (my $i = 0; $i < scalar @backups-1; $i++) {
+            $dates .= $i+1 . ")  " . get_date($backups[$i]) . "\n";
+        } $dates .= scalar @backups . ") " . get_date($backups[scalar @backups-1]); chomp $dates;
         $table->addRow($users{names}[$i], $dirs, $dates);
         $table->addRowLine();
     }

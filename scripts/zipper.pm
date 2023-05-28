@@ -18,6 +18,12 @@ sub zip {
         if (crypt::encrypt($backup, $user) == 1) {
             return (2, $user);
         } else {
+            chomp $user;
+            if (`ls /var/back-a-la/$user | wc -l` > 10) {
+                my @backups = `ls /var/back-a-la/$user`;
+                sort @backups;
+                `rm /var/back-a-la/$user/$backups[0]`;
+            }
             return (0, $user);
         }
     }
