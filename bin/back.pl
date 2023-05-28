@@ -24,7 +24,9 @@ foreach my $command (@ARGV) {
     $commands .= $command . " ";
 }
 $commands = substr $commands, 0, -1;
-
+if ($commands eq "") {
+    $commands = "--help";
+}
 utils::send_message($socket, $commands);
 
 while (1) {
