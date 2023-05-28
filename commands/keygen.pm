@@ -54,7 +54,7 @@ sub keygen {
     my %keys_info = ();
     # Chiede la passphrase per le chiavi RSA
     $keys_info{"Passphrase"} = $pass;
-    #chomp $keys_info{"Passphrase"};
+    chomp $keys_info{"Passphrase"};
 
     if (length $keys_info{"Passphrase"} < 5 && $keys_info{"Passphrase"} ne "") {
         utils::send_message($connection, "Passphrase too short. Minimum five characters", 1);
@@ -68,7 +68,7 @@ sub keygen {
     }
 
     # Genera la passphrase
-    utils::send_message($connection, "Generating passphrase...", 1024, 0);
+    utils::send_message($connection, "Generating passphrase...");
     system("openssl rand -base64 128 > /etc/back/keys/passphrase.tmp 2> /dev/null");
     # Rinomina le chiavi precedenti temporaneamente 
     File::Find::find(sub {

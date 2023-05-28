@@ -28,7 +28,7 @@ sub parse {
             return ls(@_);
         }
         case "start" {
-            return backup($connection, @_);
+            return start($connection, @_);
         }
         else {
             return $help;
