@@ -2,7 +2,7 @@ package commands::user;
 
 use warnings;
 use strict;
-use Text::Table;
+use Text::ASCIITable;
 use Switch;
 use JSON;
 require "./lib/utils.pm";
@@ -90,29 +90,35 @@ sub ls {
 
     my @ids = ();
     my $json_data = utils::read_user_json();
-    my $table = undef;
+    my $table = Text::ASCIITable->new({});
+    my $quiet = undef;
 
     if (!$options{quiet}) {
-        $table = Text::Table->new("USER", "NAME", "DIRECTORIES", "ACTIVE");
-    } else {
-        $table = Text::Table->new();
+        $table->setCols("USER", "NAME", "DIRECTORIES", "ACTIVE");
     }
+
     foreach my $user (keys $json_data->%*) {
         push @ids, $user;
     }
     @ids = sort @ids;
     foreach my $user (@ids) {
-        my $directories = join(",\n", $json_data->{$user}->{"directories"}->@*);
+        my $directories = join("\n", $json_data->{$user}->{"directories"}->@*);
         my $name = `grep 'x:$user:' /etc/passwd | cut -d ':' -f 1`;
-            if ($options{all} || $json_data->{$user}->{"active"} eq "true") {
-                if ($options{quiet}) {
-                    $table->add($user);
-                } else {
-                    $table->add($user, $name, $directories, $json_data->{$user}->{"active"});
-                }
+        if ($options{all} || $json_data->{$user}->{"active"} eq "true") {
+            if ($options{quiet}) {
+                $quiet .= "$user\n";
+            } else {
+                $table->addRow($user, $name, $directories, $json_data->{$user}->{"active"});
+                $table->addRowLine();
             }
+        }
     }
-    return $table->stringify;
+    if ($options{quiet}) {
+        chomp $quiet;
+        return $quiet;
+    }
+    chomp $table;
+    return $table;
 }
 
 sub add {

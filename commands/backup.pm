@@ -2,7 +2,7 @@ package commands::backup;
 
 use warnings;
 use strict;
-use Text::Table;
+use Text::ASCIITable;
 use Switch;
 use JSON;
 use File::Path;
@@ -44,7 +44,8 @@ sub ls {
                 "Options: \n" .
                 "  -u, --user\t\tUser for which to list the backups\n";
     my $json_data = utils::read_user_json();
-    my $table = Text::Table->new("NAME", "DIRECTORIES", "DATE");
+    my $table = Text::ASCIITable->new({});
+    $table->setCols("NAME", "DIRECTORIES", "DATES");
     my %users = (names => [], ids => []);
 
     foreach my $command (@_) {
@@ -96,13 +97,14 @@ sub ls {
         
         foreach my $dir ($json_data->{$users{ids}[$i]}->{"directories"}->@*) {
             $dirs .= $dir . "\n";
-        }
+        } chomp $dirs;
         foreach (my $i = 0; $i < scalar @backups; $i++) {
             $dates .= $i+1 . ") " . get_date($backups[$i]) . "\n";
-        }
-        $table->add($users{names}[$i], $dirs, $dates);
+        } chomp $dates;
+        $table->addRow($users{names}[$i], $dirs, $dates);
+        $table->addRowLine();
     }
-    return $table->stringify;
+    return $table;
 }
 
 sub start {
