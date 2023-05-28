@@ -27,34 +27,29 @@ sub interface {
 
 sub handle_connection {
     my $connection = shift;
-    my $request = utils::receive_message($connection);
-    chomp $request;
-    my $response = command_handler($connection, $request);    
-    if ($response eq "1") {
-        # Ignore 
-    } else {
-        utils::send_message($connection, $response, 1);
-    }
+    my $request = utils::receive_message($connection); chomp $request;
+    my $response = command_handler($connection, $request);
+    utils::send_message($connection, $response, 1);
 }
 
 sub command_handler {
     my $connection = shift @_;
+    my $help = "Usage: backctl [OPTIONS]\n" .
+               "Options: \n" .
+               "  user\t\t\t\tManage users\n" .
+               "  keygen\t\t\t\tGenerate new keys\n" .
+               "  backup\t\t\t\tPerform a backup fot a selected user\n" .
+               "  -h, --help\t\t\tShow this help message\n" .
+               "  -v, --version\t\t\tShow the version of the program\n";
+    if (scalar @_ == 0) {
+        return $help;
+    }
     my @commands = split / /, $_[0];
     my $command = shift @commands;
     my $response = undef;
     my $stop = 0;
-    my $help = "Usage: backctl [OPTIONS]\n" .
-               "Options: \n" .
-               "  -h, --help\t\t\tShow this help message\n" .
-               "  -v, --version\t\t\tShow the version of the program\n" .
-               "  user\t\t\t\tManage users\n" .
-               "  keygen\t\t\t\tGenerate new keys\n" .
-               "  backup\t\t\t\tPerform a backup fot a selected user\n";
 
     switch ($command) {
-        case "--help" {
-            # TODO DA SISTEMARE
-        }
         case /^(-v|--version)$/ {
             $response = "Back-a-la 0.1.0";
         }
@@ -66,6 +61,9 @@ sub command_handler {
         }
         case "backup" {
             $response = commands::backup::parse($connection, @commands);
+        }
+        else {
+            $response = $help;
         }
     }
     return $response;
