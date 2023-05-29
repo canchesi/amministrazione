@@ -79,7 +79,7 @@ sub restore_backup {
         $backups[$number] =~ s/\.enc//g;
         if (zip::extract($backups[$number], $user) == 0) {
             unlink "/tmp/." . $backups[$number];
-            remove_old($user, $number);
+            remove_older($user, $number);
             $SIG{INT} = sub {};
             return "Restore performed successfully";
         } else {
@@ -95,7 +95,7 @@ sub restore_backup {
 
 }
 
-sub remove_old {
+sub remove_older {
     my $user = shift @_;
     my $number = shift @_;
     my @backups = split '\n', `ls /var/back-a-la/$user | sort -r`;

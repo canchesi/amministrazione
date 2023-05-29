@@ -50,7 +50,7 @@ sub ls {
 
     foreach my $command (@_) {
         if ($command =~ /^(-u|--user)$/) {
-            shift @_; my $user = shift @_;
+            shift @_; my $user = shift @_ || ""; chomp $user;
             if ($user eq "" || $user =~ /^-.*/) {
                 return $help;
             }
@@ -61,7 +61,9 @@ sub ls {
                     return $help;
                 } elsif ($exists == 2) {
                     return "User $users{names}[$i] does not exist in the system";
-                } elsif ($exists == 1) {
+                } elsif (`id -u $users{names}[$i]` < 1000) {
+                    return "Impossible to make a backup of a system user ($users{names}[$i])";
+                }elsif ($exists == 1) {
                     return "User $users{names}[$i] does not exist in Back-a-la system";
                 }
                 $users{ids}[$i] = `id -u $users{names}[$i]`;
@@ -114,6 +116,7 @@ sub start {
     my @paths = ();
     my $stop = 0;
     my @threads = ();
+    my $ok = 0;
 
     my $help = "Usage: backup start [OPTIONS]\n" .
                 "Perform a backup for a selected list of users.\n" .
@@ -131,15 +134,19 @@ sub start {
                     return $help;
                 } elsif ($exists == 2) {
                     return "User $user does not exist in the system";
-                } elsif ($exists == 1) {
-                    return "User $user does not exist in Back-a-la system";
                 } elsif (`id -u $users[$i]` < 1000) {
                     return "Impossible to make a backup of a system user ($user)";
+                } elsif ($exists == 1) {
+                    return "User $user does not exist in Back-a-la system";
                 }
             }
+            $ok = 1;
         } else {
             return $help;
         }
+    }
+    if ($ok == 0) {
+        return $help;
     }
     utils::send_message($connection, "Backup started. It may take a while, please wait...");
     my $time = time();
