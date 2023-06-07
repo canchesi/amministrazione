@@ -63,6 +63,7 @@ sub parse {
                 case 2 { return "User does not exist in the system\n"; }
                 case 3 { return "User does not exist in Back-a-la system\n"; }
                 case 4 { return "User's backup already inactive\n"; }
+                case 5 { return "Error during backup deactivation\n"; }
                 else { return $err; }
             }
         }
@@ -209,20 +210,22 @@ sub up {
     if ($user eq "") {
         return 1;
     }
-    $user = `grep '^$user:' /etc/passwd | cut -d ':' -f 3`;
-    if ($user eq "") {
+    my $user_id = `grep '^$user:' /etc/passwd | cut -d ':' -f 3`;
+    if ($user_id eq "") {
         return 2;
     }
-    chomp $user;
+    chomp $user_id;
 
     my $json_data = utils::read_user_json();
 
-    if (! exists $json_data->{$user}) {
+    if (! exists $json_data->{$user_id}) {
         return 3;
-    } elsif ($json_data->{$user}->{"active"} eq "true") {
+    } elsif ($json_data->{$user_id}->{"active"} eq "true") {
         return 4;
+    } elsif (system("sed -i --follow-symlink '/$user/ s/^#//' /etc/cron.d/back-a-la") != 0) {
+        return 5;
     } else {
-        $json_data->{$user}->{"active"} = "true";
+        $json_data->{$user_id}->{"active"} = "true";
         open(my $json_file, '>', '/etc/back/users.json') or die $!;
         print $json_file JSON->new->ascii->pretty->encode($json_data);
         close($json_file);
@@ -245,20 +248,22 @@ sub down {
     if ($user eq "") {
         return 1;
     }
-    $user = `grep '^$user:' /etc/passwd | cut -d ':' -f 3`;
-    if ($user eq "") {
+    my $user_id = `grep '^$user:' /etc/passwd | cut -d ':' -f 3`;
+    if ($user_id eq "") {
         return 2;
     }
-    chomp $user;
+    chomp $user_id;
 
     my $json_data = utils::read_user_json();
 
-    if (! exists $json_data->{$user}) {
+    if (! exists $json_data->{$user_id}) {
         return 3;
-    } elsif ($json_data->{$user}->{"active"} eq "false") {
+    } elsif ($json_data->{$user_id}->{"active"} eq "false") {
         return 4;
+    } elsif (system("sed -i --follow-symlink '/$user/ s/^/#/' /etc/cron.d/back-a-la") != 0) {
+        return 5;
     } else {
-        $json_data->{$user}->{"active"} = "false";
+        $json_data->{$user_id}->{"active"} = "false";
         open(my $json_file, '>', '/etc/back/users.json') or die $!;
         print $json_file JSON->new->ascii->pretty->encode($json_data);
         close($json_file);
