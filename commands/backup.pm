@@ -42,7 +42,7 @@ sub ls {
     my $help = "Usage: backup ls [OPTIONS]\n" .
                 "List all the backups recorded in the system.\n" .
                 "Options: \n" .
-                "  -u, --user\t\tUser for which to list the backups\n";
+                "  -u, --user USER\t\tUser for which to list the backups\n";
     my $json_data = utils::read_user_json();
     my $table = Text::ASCIITable->new({});
     $table->setCols("NAME", "DIRECTORIES", "DATES");
@@ -121,7 +121,7 @@ sub start {
     my $help = "Usage: backup start [OPTIONS]\n" .
                 "Perform a backup for a selected list of users.\n" .
                 "Options: \n" .
-                "  -u, --user\t\tUser for which to perform the backup\n";
+                "  -u, --user USER\t\tUser for which to perform the backup\n";
 
     foreach my $command (@_) {
         if ($command =~ /^(-u|--user)$/) {

@@ -4,6 +4,7 @@ require './commands/users.pm';
 require './commands/keygen.pm';
 require './commands/backup.pm';
 require './commands/restore.pm';
+require './commands/set.pm';
 require './lib/conn.pm';
 require './lib/utils.pm';
 
@@ -65,6 +66,9 @@ sub command_handler {
         }
         case "restore" {
             $response = commands::restore::restore($connection, @commands);
+        }
+        case "set" {
+            $response = commands::set::set(@commands);
         }
         else {
             $response = $help;

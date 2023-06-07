@@ -21,7 +21,7 @@ sub restore {
                 "from the 10 most recent backups.\n" .
                 "More recent backups will be removed.\n" .
                 "Options: \n" .
-                "  -u, --user\t\tUser to restore backup for\n" .
+                "  -u, --user USER\t\tUser to restore backup for\n" .
                 "  -n, --number\t\tNumber of the backup to restore, based on the list of backups\n " .
                 "\t\t\tgiven by the \"backctl backup ls\" command\n";
 

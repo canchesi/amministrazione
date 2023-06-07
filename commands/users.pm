@@ -152,7 +152,8 @@ sub add {
     } else {
         $json_data->{$user} = {
             "directories" => [],
-            "active" => "false"
+            "active" => "false",
+            "period" => "# 0 0 * * *"
         };
         open(my $json_file, '>', '/etc/back/users.json') or die $!;
         print $json_file JSON->new->ascii->pretty->encode($json_data);
@@ -222,7 +223,7 @@ sub up {
         return 3;
     } elsif ($json_data->{$user_id}->{"active"} eq "true") {
         return 4;
-    } elsif (system("sed -i --follow-symlink '/$user/ s/^#//' /etc/cron.d/back-a-la") != 0) {
+    } elsif (system("sed -i '/$user/ s/^#//' /etc/cron.d/back-a-la") != 0) {
         return 5;
     } else {
         $json_data->{$user_id}->{"active"} = "true";
@@ -260,7 +261,7 @@ sub down {
         return 3;
     } elsif ($json_data->{$user_id}->{"active"} eq "false") {
         return 4;
-    } elsif (system("sed -i --follow-symlink '/$user/ s/^/#/' /etc/cron.d/back-a-la") != 0) {
+    } elsif (system("sed -i '/$user/ s/^/#/' /etc/cron.d/back-a-la") != 0) {
         return 5;
     } else {
         $json_data->{$user_id}->{"active"} = "false";
