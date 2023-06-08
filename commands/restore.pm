@@ -44,7 +44,7 @@ sub restore {
             shift @_; $number = shift @_; chomp $number;
             if ($number eq "" || $number =~ /^-.*/) {
                 return $help;
-            } elsif ($number !~ /^([0-9]|10)$/ || $number == 0) {
+            } elsif ($number !~ /^([1-9]|10)$/ || $number == 0) {
                 return "Invalid number. Please select a number between 1 and 10.\nUse \"backctl backup ls\" to see the list of backups";
             } 
             $ok[1] = 1;

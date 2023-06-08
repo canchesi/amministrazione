@@ -30,6 +30,9 @@ sub parse {
         case "start" {
             return start($connection, @_);
         }
+        case "del" {
+            return del(@_);
+        }
         else {
             return $help;
         }
@@ -171,6 +174,53 @@ sub start {
 
     return "All backups performed successfully. (" . (time() - $time). ")";
     $SIG{INT} = sub {};
+}
+
+sub del {
+    my $user = "";
+    my $number = "";
+    my @ok = (0, 0);
+    my $help = "Usage: backup del [OPTIONS]\n" .
+                "Delete a backup for a selected user.\n" .
+                "Options: \n" .
+                "  -u, --user USER\t\tUser for which to delete the backup\n" .
+                "  -n, --number NUMBER\t\tNumber of the backup to delete\n";
+
+    foreach my $command (@_) {
+        if ($command =~ /^(-u|--user)$/) {
+            shift @_; $user = shift @_; 
+            $user = `id -u $user`; chomp $user;
+            my $exists = utils::user_exists($user);
+            if ($user eq "" || $user =~ /^-.*/) {
+                return $help;
+            } elsif ($exists == 2) {
+                return "User does not exist in the system";
+            } elsif ($exists == 1) {
+                return "User does not exist in Back-a-la system";
+            } elsif (`id -u $user` < 1000) {
+                return "Impossible to delete a backup of a system user ($user)";
+            }
+            $ok[0] = 1;
+        } elsif ($_[0] =~ /^(-n|--number)$/) {
+            shift @_; $number = shift @_; chomp $number;
+            if ($number eq "" || $number =~ /^-.*/) {
+                return $help;
+            } elsif ($number !~ /^([0-9]|10)$/ || $number == 0) {
+                return "Invalid number. Please select a number between 1 and 10.\nUse \"backctl backup ls\" to see the list of backups";
+            } 
+            $ok[1] = 1;
+        } else {
+            return $help;
+        }
+    }
+
+    if ($ok[0] && $ok[1]) {
+        my @backups = split '\n', `ls /var/back-a-la/$user | sort -r`;
+        unlink "/var/back-a-la/$user/$backups[--$number]";
+        return "Backup deleted successfully";
+    } else {
+        return $help;
+    } 
 }
 
 sub get_date {

@@ -18,11 +18,13 @@ sub set {
     my $user = "";
     my $time = "";
     my $option = "";
+    my @ok = (0, 0);
     for (my $i = 0; $i < 2; $i++) {
         $option = shift @_;
         if ($option =~ /^-/) {
             if ($option eq "-u" || $option eq "--user") {
                 $user = shift @_;
+                $ok[0] = 1;
             } elsif ($option eq "-t" || $option eq "--time") {
                 for (my $i = 0; $i < 5; $i++) {
                     $time .= shift @_;
@@ -33,12 +35,17 @@ sub set {
                 if (!check_cron($time)) {
                     return "Time interval must be in cron format. Check it out";
                 }
+                $ok[1] = 1;
             } else {
                 return $help;
             }
         } else {
             return $help;
         }
+    }
+
+    if (!$ok[0] || !$ok[1]) {
+        return $help;
     }
 
     if ($user eq "") {

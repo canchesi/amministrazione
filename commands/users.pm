@@ -31,6 +31,7 @@ sub parse {
                 case 2 { return "User does not exist in the system\n"; }
                 case 3 { return "Impossible to add a system user\n"; }
                 case 4 { return "User already exists\n"; }
+                case 5 { return "Error while creating cron configuration\n"; }
                 else { return $err; }
             }
         }
@@ -41,6 +42,7 @@ sub parse {
                 case 1 { return "No user given\n"; }
                 case 2 { return "User does not exist in the system\n"; }
                 case 3 { return "User does not exist in Back-a-la system\n"; }
+                case 4 { return "Error while deleting cron configuration\n"; }
                 else { return $err; }
             }
         }
@@ -95,7 +97,7 @@ sub ls {
     my $quiet = undef;
 
     if (!$options{quiet}) {
-        $table->setCols("USER", "NAME", "DIRECTORIES", "ACTIVE");
+        $table->setCols("USER", "NAME", "DIRECTORIES", "CRON", "ACTIVE");
     }
 
     foreach my $user (keys $json_data->%*) {
@@ -104,12 +106,13 @@ sub ls {
     @ids = sort @ids;
     foreach my $user (@ids) {
         my $directories = join("\n", $json_data->{$user}->{"directories"}->@*);
+        my $period = $json_data->{$user}->{"period"};
         my $name = `grep 'x:$user:' /etc/passwd | cut -d ':' -f 1`;
         if ($options{all} || $json_data->{$user}->{"active"} eq "true") {
             if ($options{quiet}) {
                 $quiet .= "$user\n";
             } else {
-                $table->addRow($user, $name, $directories, $json_data->{$user}->{"active"});
+                $table->addRow($user, $name, $directories, $period, $json_data->{$user}->{"active"});
                 $table->addRowLine();
             }
         }
@@ -138,27 +141,29 @@ sub add {
     if ($user eq "") {
         return 1;
     }
-    $user = `grep '^$user:' /etc/passwd | cut -d ':' -f 3`;
+    my $user_id = `grep '^$user:' /etc/passwd | cut -d ':' -f 3`;
 
-    if ($user eq "") {
+    if ($user_id eq "") {
         return 2;
-    } elsif ($user + 0 < 1000) {
+    } elsif ($user_id + 0 < 1000) {
         return 3;
     }
-    chomp $user;
+    chomp $user_id;
 
-    if (exists $json_data->{$user}) {
+    if (exists $json_data->{$user_id}) {
         return 4;  
-    } else {
-        $json_data->{$user} = {
+    } elsif (system("echo '#0 0 * * * root backctl backup start -u $user\n' >> /etc/cron.d/back-a-la") != 0) {
+        return 5;
+    } else { 
+        $json_data->{$user_id} = {
             "directories" => [],
             "active" => "false",
-            "period" => "# 0 0 * * *"
+            "period" => "0 0 * * *"
         };
         open(my $json_file, '>', '/etc/back/users.json') or die $!;
         print $json_file JSON->new->ascii->pretty->encode($json_data);
         close($json_file);
-        File::Path::make_path("/var/back-a-la/$user");
+        File::Path::make_path("/var/back-a-la/$user_id");
         return 0;
     }
 }
@@ -179,16 +184,18 @@ sub del {
     if ($user eq "") {
         return 1;
     }
-    $user = `grep '^$user:' /etc/passwd | cut -d ':' -f 3`;
-    if ($user eq "") {
+    my $user_id = `grep '^$user:' /etc/passwd | cut -d ':' -f 3`;
+    if ($user_id eq "") {
         return 2;
     }
-    chomp $user;
+    chomp $user_id;
 
-    if (! exists $json_data->{$user}) {
+    if (! exists $json_data->{$user_id}) {
         return 3;
+    } elsif (system("sed -i '/$user/,+1d' /etc/cron.d/back-a-la;") != 0) {
+        return 5;
     } else {
-        delete $json_data->{$user};
+        delete $json_data->{$user_id};
         open(my $json_file, '>', '/etc/back/users.json') or die $!; 
         truncate $json_file, 0;
         print $json_file JSON->new->ascii->pretty->encode($json_data);
