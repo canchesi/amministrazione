@@ -1,7 +1,7 @@
 package commands::keygen;
 
-require "./lib/crypt.pm";
-require "./lib/utils.pm";
+use crypt;
+use utils;
 use warnings;
 use strict;
 use Switch;
@@ -135,3 +135,4 @@ sub keygen {
     utils::send_message($connection, "Passphrase generated", 1);
 
 }
+1;

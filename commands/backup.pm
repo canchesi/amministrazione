@@ -8,10 +8,12 @@ use JSON;
 use File::Path;
 use Thread;
 use Time::HiRes qw(time);
-require "./lib/utils.pm";
-require "./scripts/zipper.pm";
+use utils;
+use zipper;
 
 no warnings 'experimental';
+
+my $config = utils::read_config();
 
 sub parse {
     my $connection = shift @_;
@@ -92,7 +94,7 @@ sub ls {
     chomp @{$users{ids}};
 
     foreach (my $i = 0; $i < scalar @{$users{names}}; $i++) {
-        my $user_dir = "/var/back-a-la/" . $users{ids}[$i]; chomp $user_dir;
+        my $user_dir = $config->{"BACKUP_DIR"} . ($config->{"BACKUP_DIR"} =~ /\/$/ ? "" : "/") . $users{ids}[$i]; chomp $user_dir;
         my @backups = `ls -t -l $user_dir | grep -v total | awk '{print \$9}'`; chomp @backups;
         my $dates = "";
         my $dirs = "";
@@ -166,6 +168,8 @@ sub start {
                     return "Backup failed for user $res[1] (zip failed, maybe not enough space)";
                 } elsif ($res[0] == 2) {
                     return "Backup failed for user $res[1] (encryption failed)";
+                } elsif ($res[0] == 3) {
+                    return "Backup failed for user $res[1] (not enough memory in storage)";
                 }
                 $stop++;
             } 
@@ -215,8 +219,9 @@ sub del {
     }
 
     if ($ok[0] && $ok[1]) {
-        my @backups = split '\n', `ls /var/back-a-la/$user | sort -r`;
-        unlink "/var/back-a-la/$user/$backups[--$number]";
+        my $user_dir = $config->{"BACKUP_DIR"} . ($config->{"BACKUP_DIR"} =~ /\/$/ ? "" : "/") . $user;
+        my @backups = split '\n', `ls $user_dir | sort -r`;
+        unlink "$user_dir/$backups[--$number]";
         return "Backup deleted successfully";
     } else {
         return $help;

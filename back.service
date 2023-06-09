@@ -1,0 +1,13 @@
+[Unit]
+Description=backd is the Back-a-la daemon. It is responsible for managing the Back-a-la service.
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/backd
+TimeoutStopSec=1
+KillMode=process
+Restart=always
+RestartSec=3s
+
+[Install]
+WantedBy=multi-user.target

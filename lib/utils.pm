@@ -3,6 +3,7 @@ package utils;
 use strict;
 use warnings;
 use JSON;
+use IO::Socket;
 
 sub prepare_send_message { # Parametri: messaggio,  ultimo
     my $message = shift;
@@ -114,6 +115,22 @@ sub user_exists {
         }
     }
     return 1;
+}
+
+sub read_config {
+    my $config_file = "/etc/back/back.conf";
+    my $config = {};
+    open(my $config_fh, '<', $config_file) or return undef;
+    while (my $line = <$config_fh>) {
+        chomp $line;
+        if ($line =~ /^#/) {
+            next;
+        }
+        my ($key, $value) = split(/=/, $line);
+        $config->{$key} = $value;
+    }
+    close($config_fh);
+    return $config;
 }
 
 1;

@@ -2,14 +2,14 @@ package commands::restore;
 
 use warnings;
 use strict;
-use Text::Table;
 use Switch;
 use JSON;
-require "./lib/utils.pm";
-require "./scripts/zipper.pm";
+use utils;
+use zipper;
 
 no warnings 'experimental';
 
+my $config = utils::read_config();
 
 sub restore {
     my $connection = shift @_;
@@ -67,8 +67,8 @@ sub restore_backup {
 
     utils::send_message($connection, "Restore started. It may take a while, please wait...");    
     $SIG{INT} = sub { utils::send_message($connection, "Restore interrupted. Back-a-la interrupted the connection", 1); };
-        
-    my @backups = split '\n', `ls /var/back-a-la/$user | sort -r`;
+    my $user_dir = $config->{"BACKUP_DIR"} . ($config->{"BACKUP_DIR"} =~ /\/$/ ? "" : "/") . $user;
+    my @backups = split '\n', `ls $user_dir | sort -r`;
 
     if ($backups[0] eq "") {
         return "No backups found for user $user";
@@ -96,11 +96,12 @@ sub restore_backup {
 }
 
 sub remove_older {
+    my $user_dir = $config->{"BACKUP_DIR"} . ($config->{"BACKUP_DIR"} =~ /\/$/ ? "" : "/") . shift @_;
     my $user = shift @_;
     my $number = shift @_;
-    my @backups = split '\n', `ls /var/back-a-la/$user | sort -r`;
+    my @backups = split '\n', `ls $user_dir | sort -r`;
     for (my $i = 0; $i < $number; $i++) {
-        unlink "/var/back-a-la/$user/$backups[$i]";
+        unlink "$user_dir/$backups[$i]";
     }
 }
 

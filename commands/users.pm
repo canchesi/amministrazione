@@ -5,9 +5,11 @@ use strict;
 use Text::ASCIITable;
 use Switch;
 use JSON;
-require "./lib/utils.pm";
+use utils;
 
 no warnings 'experimental';
+
+my $config = utils::read_config();
 
 sub parse {
     my $command = shift @_ || "";
@@ -129,8 +131,7 @@ sub add {
     my $user = shift @_ || "";
     my $help = "Usage: user add [USER]\n" .
             "Add a user to the list of users for which a backup is or can be performed.\n" .
-            "  It does not accept any option.\n" .
-            "  -h, --help\t\t\tDisplay this help and exit\n";
+            "  It does not accept any option.\n";
     my $not_exist = undef;
     my $json_data = utils::read_user_json();
 
@@ -149,10 +150,10 @@ sub add {
         return 3;
     }
     chomp $user_id;
-
+    
     if (exists $json_data->{$user_id}) {
         return 4;  
-    } elsif (system("echo '#0 0 * * * root backctl backup start -u $user\n' >> /etc/cron.d/back-a-la") != 0) {
+    } elsif (system("echo '#" . $config->{'DEFAULT_PERIOD'} . " root backctl backup start -u $user\n' >> /etc/cron.d/back-a-la") != 0) {
         return 5;
     } else { 
         $json_data->{$user_id} = {
@@ -163,7 +164,7 @@ sub add {
         open(my $json_file, '>', '/etc/back/users.json') or die $!;
         print $json_file JSON->new->ascii->pretty->encode($json_data);
         close($json_file);
-        File::Path::make_path("/var/back-a-la/$user_id");
+        File::Path::make_path($config->{'BACKUP_DIR'} . ($config->{'BACKUP_DIR'} =~ /\/$/ ? "" : "/") . $user_id);
         return 0;
     }
 }
@@ -172,8 +173,7 @@ sub del {
     my $user = shift @_ || "";
     my $help = "Usage: user del [USER]\n" .
             "Delete a user from the list of users for which a backup is or can be performed.\n" .
-            "  It does not accept any option.\n" .
-            "  -h, --help\t\t\tDisplay this help and exit\n";
+            "  It does not accept any option.\n";
     my $not_exist = undef;
     my $json_data = utils::read_user_json();
 
@@ -208,8 +208,7 @@ sub up {
     my $user = shift @_ || "";
     my $help = "Usage: user up [USER]\n" .
             "Activate backup for a user.\n" .
-            "  It does not accept any option.\n" .
-            "  -h, --help\t\t\tDisplay this help and exit\n";
+            "  It does not accept any option.\n";
 
     if ($user =~ /^-.*/) {
         return $help;
@@ -246,8 +245,7 @@ sub down {
     my $user = shift @_ || "";
     my $help = "Usage: user down [USER]\n" .
             "Deactivate backup for a user.\n" .
-            "  It does not accept any option.\n" .
-            "  -h, --help\t\t\tDisplay this help and exit\n";
+            "  It does not accept any option.\n";
 
     if ($user =~ /^-.*/) {
         return $help;

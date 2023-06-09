@@ -1,12 +1,13 @@
 package interface;
 
-require './commands/users.pm';
-require './commands/keygen.pm';
-require './commands/backup.pm';
-require './commands/restore.pm';
-require './commands/set.pm';
-require './lib/conn.pm';
-require './lib/utils.pm';
+use users;
+use keygen;
+use backup;
+use restore;
+use set;
+use dirs;
+use conn;
+use utils;
 
 use strict;
 use warnings;
@@ -69,6 +70,9 @@ sub command_handler {
         }
         case "set" {
             $response = commands::set::set(@commands);
+        }
+        case "directory" {
+            $response = commands::dirs::directory(@commands);
         }
         else {
             $response = $help;

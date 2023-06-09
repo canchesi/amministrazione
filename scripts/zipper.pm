@@ -1,13 +1,16 @@
 package zipper;
 
-require "./lib/zip.pm";
-require "./lib/crypt.pm";
-require "./lib/utils.pm";
+use zip;
+use crypt;
+use utils;
 
 use JSON;
 
+my $config = utils::read_config();
+
 sub zip {
     my $user = shift || "";
+    my $user_dir = $config->{"BACKUP_DIR"} . ($config->{"BACKUP_DIR"} =~ /\/$/ ? "" : "/") . $user;
     my $json_data = undef;
 
     $json_data = utils::read_user_json($user);
@@ -15,14 +18,17 @@ sub zip {
     if ($backup == 1) {
         return (1, $user);
     } else {
-        if (crypt::encrypt($backup, $user) == 1) {
+        my $err = crypt::encrypt($backup, $user);
+        if ($err == 1) {
             return (2, $user);
+        } elsif ($err == 2) {
+            return (3, $user);
         } else {
             chomp $user;
-            if (`ls /var/back-a-la/$user | wc -l` > 10) {
-                my @backups = `ls /var/back-a-la/$user`;
+            if (`ls $user_dir | wc -l` > 10) {
+                my @backups = `ls $user_dir`;
                 sort @backups;
-                `rm /var/back-a-la/$user/$backups[0]`;
+                `rm $user_dir/$backups[0]`;
             }
             return (0, $user);
         }

@@ -8,13 +8,18 @@ use File::Find;
 use File::Slurp;
 use feature qw(say);
 
-
+my $config = utils::read_config();
 
 # Cifra un file con AES-256-CBC
 sub encrypt {
     my $name = shift;
     my $user = shift;
-    my $dir = "/var/back-a-la/" . `id -u $user`; chomp $dir;
+    my $dir_dim = `df -B1 /tmp | tail -1 | awk '{print \$4}'`; chomp $dir_dim;
+    my $file_dim = `du -b /tmp/.$name | awk '{print \$1}'`; chomp $file_dim;
+    if ($dir_dim <= $file_dim) {
+        return 2;
+    }
+    my $dir = $config->{"BACKUP_DIR"} . ($config->{"BACKUP_DIR"} =~ /\/$/ ? "" : "/") . `id -u $user`; chomp $dir;
     if (system("openssl enc -aes-256-cbc -pbkdf2 -in /tmp/." . $name . " -out " . $dir . "/" . $name . ".enc -pass pass:" . get_passphrase()) != 0) {
         return 1;
     }
@@ -26,7 +31,8 @@ sub encrypt {
 sub decrypt {
     my $name = shift;
     my $user = shift;
-    my $dir = "/var/back-a-la/" . `id -u $user`; chomp $dir;
+    my $dir = $config->{"BACKUP_DIR"} . ($config->{"BACKUP_DIR"} =~ /\/$/ ? "" : "/") . `id -u $user`; chomp $dir;
+
     if (! -f $dir . "/" . $name) {
         return 2;
     }

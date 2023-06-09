@@ -4,14 +4,13 @@ use warnings;
 use strict;
 use Switch;
 use JSON;
-require "./lib/utils.pm";
+use utils;
 
 no warnings 'experimental';
 
 sub set {
     my $help = "Usage: set [OPTIONS]\n" .
             "Activate backup for a user.\n" .
-            "  It does not accept any option.\n" .
             "  -u, --user USER\t\t\tUser to set the backup period for\n" .
             "  -t, --time TIME\t\t\tSet the backup period in cron format\n" .
             "  -h, --help\t\t\tDisplay this help and exit";
@@ -93,3 +92,4 @@ sub sub_cron {
         return 0;
     }
 }
+1;

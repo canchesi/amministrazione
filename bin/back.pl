@@ -4,7 +4,8 @@ use warnings;
 use strict;
 use IO::Socket::UNIX;
 use Switch;
-require "./lib/utils.pm";
+use lib "/home/claudio/amministrazione/lib";
+use utils;
 
 my $socket = IO::Socket::UNIX->new(
     Type => SOCK_STREAM(),
