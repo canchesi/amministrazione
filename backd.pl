@@ -1,7 +1,7 @@
 use lib "/home/claudio/amministrazione/lib";
 use lib "/home/claudio/amministrazione/scripts";
 use lib "/home/claudio/amministrazione/commands";
-use 
+use interface;
 
 use threads;
 use IO::Socket::UNIX;
