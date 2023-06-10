@@ -97,7 +97,6 @@ sub restore_backup {
 
 sub remove_older {
     my $user_dir = $config->{"BACKUP_DIR"} . ($config->{"BACKUP_DIR"} =~ /\/$/ ? "" : "/") . shift @_;
-    my $user = shift @_;
     my $number = shift @_;
     my @backups = split '\n', `ls $user_dir | sort -r`;
     for (my $i = 0; $i < $number; $i++) {

@@ -38,7 +38,7 @@ sub extract {
     }
     foreach my $member ($zip->members()) {
         $zip->extractTree($member->fileName(), "/" . $member->fileName());
-        chown $user, $user, File::Finder->in("/" . $member->fileName());
+    	chown $user, $user, "/" .$member->fileName();
     }
     return 0;
 
