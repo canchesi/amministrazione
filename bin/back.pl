@@ -4,7 +4,7 @@ use warnings;
 use strict;
 use IO::Socket::UNIX;
 use Switch;
-use lib "/home/claudio/amministrazione/lib";
+use lib "./lib";
 use utils;
 
 my $socket = IO::Socket::UNIX->new(

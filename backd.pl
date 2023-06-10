@@ -1,6 +1,6 @@
-use lib "/home/claudio/amministrazione/lib";
-use lib "/home/claudio/amministrazione/scripts";
-use lib "/home/claudio/amministrazione/commands";
+use lib "./lib";
+use lib "./scripts";
+use lib "./commands";
 use interface;
 
 use threads;
