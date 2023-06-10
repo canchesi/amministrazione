@@ -11,15 +11,16 @@ no warnings 'experimental';
 
 my $config = utils::read_config();
 
+# Parse the command
 sub parse {
     my $command = shift @_ || "";
-    my $help = "Usage: user [COMMAND] [OPTIONS]\n" .
+    my $help = "Usage: backctl user COMMAND [OPTIONS]\n\n" .
                "Commands: \n" .
                "  ls\t\t\tList all the users for which a backup is or can be performed\n" .
                "  add\t\t\tAdd a user to the list of users for which a backup is or can be performed\n" .
                "  del\t\t\tDelete a user from the list of users for which a backup is or can be performed\n" .
                "  up\t\t\tActivate backup for a user\n" .
-               "  down\t\t\tDeactivate backup for a user\n";
+               "  down\t\t\tDeactivate backup for a user";
 
     switch ($command) {
         case "ls" {
@@ -28,46 +29,46 @@ sub parse {
         case "add" { 
             my $err = add(@_);
             switch ($err) {
-                case 0 { return "User added successfully\n"; }
-                case 1 { return "No user given\n"; }
-                case 2 { return "User does not exist in the system\n"; }
-                case 3 { return "Impossible to add a system user\n"; }
-                case 4 { return "User already exists\n"; }
-                case 5 { return "Error while creating cron configuration\n"; }
+                case 0 { return "User added successfully"; }
+                case 1 { return "No user given"; }
+                case 2 { return "User does not exist in the system"; }
+                case 3 { return "Impossible to add a system user"; }
+                case 4 { return "User already exists"; }
+                case 5 { return "Error while creating cron configuration"; }
                 else { return $err; }
             }
         }
         case "del" {
             my $err = del(@_);
             switch ($err) {
-                case 0 { return "User deleted successfully\n"; }
-                case 1 { return "No user given\n"; }
-                case 2 { return "User does not exist in the system\n"; }
-                case 3 { return "User does not exist in Back-a-la system\n"; }
-                case 4 { return "Error while deleting cron configuration\n"; }
+                case 0 { return "User deleted successfully"; }
+                case 1 { return "No user given"; }
+                case 2 { return "User does not exist in the system"; }
+                case 3 { return "User does not exist in Back-a-la system"; }
+                case 4 { return "Error while deleting cron configuration"; }
                 else { return $err; }
             }
         }
         case "up" {
             my $err = up(@_);
             switch ($err) {
-                case 0 { return "User activated successfully\n"; }
-                case 1 { return "No user given\n"; }
-                case 2 { return "User does not exist in the system\n"; }
-                case 3 { return "User does not exist in Back-a-la system\n"; }
-                case 4 { return "User's backup already active\n"; }
+                case 0 { return "User activated successfully"; }
+                case 1 { return "No user given"; }
+                case 2 { return "User does not exist in the system"; }
+                case 3 { return "User does not exist in Back-a-la system"; }
+                case 4 { return "User's backup already active"; }
                 else { return $err; }
             }
         }
         case "down" {
             my $err = down(@_);
             switch ($err) {
-                case 0 { return "User deactivated successfully\n"; }
-                case 1 { return "No user given\n"; }
-                case 2 { return "User does not exist in the system\n"; }
-                case 3 { return "User does not exist in Back-a-la system\n"; }
-                case 4 { return "User's backup already inactive\n"; }
-                case 5 { return "Error during backup deactivation\n"; }
+                case 0 { return "User deactivated successfully"; }
+                case 1 { return "No user given"; }
+                case 2 { return "User does not exist in the system"; }
+                case 3 { return "User does not exist in Back-a-la system"; }
+                case 4 { return "User's backup already inactive"; }
+                case 5 { return "Error during backup deactivation"; }
                 else { return $err; }
             }
         }
@@ -76,21 +77,11 @@ sub parse {
 }
 
 sub ls {
-    my %options = ( # AGGIUNGERE QUA FLAGS PER LS
-        all => 0,
-        quiet => 0
-    );
-    foreach my $option (@_) {
-        switch ($option) {      # AGGIUNGERE QUA LE MODIFICHE AI FLAG PER LS
-            case qr/^(-a|--all)$/ { $options{all} = 1; }
-            case qr/^(-q|--quiet)$/ { $options{quiet} = 1; }
-            else { return "Usage: user ls [OPTION]\n" .
+    # Requires no arguments
+    if (scalar(@_)) {
+        return  "Usage: backctl user ls\n\n" .
                 "List all the users for which a backup is or can be performed.\n" .
-                "  -a, --all\t\t\tList all the users, even the inactive ones\n" .
-                "  -q, --quiet\t\t\tPrint only the users' ids\n" .
-                "  -h, --help\t\t\tDisplay this help and exit\n";
-            }
-        }
+                "It does not accept any option.";
     }
 
     my @ids = ();
@@ -98,30 +89,22 @@ sub ls {
     my $table = Text::ASCIITable->new({});
     my $quiet = undef;
 
-    if (!$options{quiet}) {
-        $table->setCols("USER", "NAME", "DIRECTORIES", "CRON", "ACTIVE");
-    }
+    # Prepare the table
+    $table->setCols("USER", "NAME", "DIRECTORIES", "CRON", "ACTIVE");
 
+    # Get the list of users
     foreach my $user (keys $json_data->%*) {
         push @ids, $user;
     }
     @ids = sort @ids;
+    
+    # Add the users to the table
     foreach my $user (@ids) {
         my $directories = join("\n", $json_data->{$user}->{"directories"}->@*);
         my $period = $json_data->{$user}->{"period"};
         my $name = `grep 'x:$user:' /etc/passwd | cut -d ':' -f 1`;
-        if ($options{all} || $json_data->{$user}->{"active"} eq "true") {
-            if ($options{quiet}) {
-                $quiet .= "$user\n";
-            } else {
-                $table->addRow($user, $name, $directories, $period, $json_data->{$user}->{"active"});
-                $table->addRowLine();
-            }
-        }
-    }
-    if ($options{quiet}) {
-        chomp $quiet;
-        return $quiet;
+        $table->addRow($user, $name, $directories, $period, $json_data->{$user}->{"active"});
+        $table->addRowLine();
     }
     chomp $table;
     return $table;
@@ -129,16 +112,18 @@ sub ls {
 
 sub add {
     my $user = shift @_ || "";
-    my $help = "Usage: user add [USER]\n" .
-            "Add a user to the list of users for which a backup is or can be performed.\n" .
-            "  It does not accept any option.\n";
+    my $help =  "Usage: backctl user add USER\n\n" .
+                "Add a user to the list of users for which a backup is or can be performed.\n" .
+                "It does not accept any option.";
     my $not_exist = undef;
     my $json_data = utils::read_user_json();
 
+    # Requires no arguments
     if ($user =~ /^-.*/) {
         return $help;
     }
 
+    # Check if the user exists
     if ($user eq "") {
         return 1;
     }
@@ -151,11 +136,13 @@ sub add {
     }
     chomp $user_id;
     
+    # Check if the user already exists
     if (exists $json_data->{$user_id}) {
         return 4;  
     } elsif (system("echo '#" . $config->{'DEFAULT_PERIOD'} . " root backctl backup start -u $user\n' >> /etc/cron.d/back-a-la") != 0) {
         return 5;
     } else { 
+        # Add the user to the Back-a-la system
         $json_data->{$user_id} = {
             "directories" => [],
             "active" => "false",
@@ -164,6 +151,7 @@ sub add {
         open(my $json_file, '>', '/etc/back/users.json') or die $!;
         print $json_file JSON->new->ascii->pretty->encode($json_data);
         close($json_file);
+        # Create the user's backup directory
         File::Path::make_path($config->{'BACKUP_DIR'} . ($config->{'BACKUP_DIR'} =~ /\/$/ ? "" : "/") . $user_id);
         return 0;
     }
@@ -171,16 +159,18 @@ sub add {
 
 sub del {
     my $user = shift @_ || "";
-    my $help = "Usage: user del [USER]\n" .
-            "Delete a user from the list of users for which a backup is or can be performed.\n" .
-            "  It does not accept any option.\n";
+    my $help =  "Usage: backctl user del USER\n\n" .
+                "Delete a user from the list of users for which a backup is or can be performed.\n" .
+                "It does not accept any option.";
     my $not_exist = undef;
     my $json_data = utils::read_user_json();
 
+    # Requires no arguments
     if ($user =~ /^-.*/) {
         return $help;
     }
 
+    # Check if the user exists
     if ($user eq "") {
         return 1;
     }
@@ -190,11 +180,13 @@ sub del {
     }
     chomp $user_id;
 
+    # Check if the user exists in the Back-a-la system
     if (! exists $json_data->{$user_id}) {
         return 3;
     } elsif (system("sed -i '/$user/,+1d' /etc/cron.d/back-a-la;") != 0) {
         return 5;
     } else {
+        # Delete the user from the Back-a-la system
         delete $json_data->{$user_id};
         open(my $json_file, '>', '/etc/back/users.json') or die $!; 
         truncate $json_file, 0;
@@ -206,14 +198,16 @@ sub del {
 
 sub up {
     my $user = shift @_ || "";
-    my $help = "Usage: user up [USER]\n" .
-            "Activate backup for a user.\n" .
-            "  It does not accept any option.\n";
+    my $help =  "Usage: backctl user up USER\n\n" .
+                "Activate backup for a user.\n" .
+                "It does not accept any option.";
 
+    # Requires no arguments
     if ($user =~ /^-.*/) {
         return $help;
     }
 
+    # Check if the user exists
     if ($user eq "") {
         return 1;
     }
@@ -223,13 +217,16 @@ sub up {
     }
     chomp $user_id;
 
+    # Read the user configuration file
     my $json_data = utils::read_user_json();
 
+    # Check if the user exists in the Back-a-la system
     if (! exists $json_data->{$user_id}) {
         return 3;
     } elsif ($json_data->{$user_id}->{"active"} eq "true") {
         return 4;
     } elsif (system("sed -i '/$user/ s/^#//' /etc/cron.d/back-a-la") != 0) {
+        # Remove the comment character from the cron job for the user's automatic backup
         return 5;
     } else {
         $json_data->{$user_id}->{"active"} = "true";
@@ -238,19 +235,20 @@ sub up {
         close($json_file);
         return 0;
     }
-
 }
 
 sub down {
     my $user = shift @_ || "";
-    my $help = "Usage: user down [USER]\n" .
-            "Deactivate backup for a user.\n" .
-            "  It does not accept any option.\n";
+    my $help =  "Usage: user down [USER]\n\n" .
+                "Deactivate backup for a user.\n" .
+                "It does not accept any option.";
 
+    # Requires no arguments
     if ($user =~ /^-.*/) {
         return $help;
     }
 
+    # Check if the user exists
     if ($user eq "") {
         return 1;
     }
@@ -260,13 +258,16 @@ sub down {
     }
     chomp $user_id;
 
+    # Read the user configuration file
     my $json_data = utils::read_user_json();
 
+    # Check if the user exists in the Back-a-la system
     if (! exists $json_data->{$user_id}) {
         return 3;
     } elsif ($json_data->{$user_id}->{"active"} eq "false") {
         return 4;
     } elsif (system("sed -i '/$user/ s/^/#/' /etc/cron.d/back-a-la") != 0) {
+        # Comments the cron job for the user's automatic backup
         return 5;
     } else {
         $json_data->{$user_id}->{"active"} = "false";
@@ -275,7 +276,5 @@ sub down {
         close($json_file);
         return 0;
     }
-
-
 }
 1;

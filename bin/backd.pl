@@ -6,9 +6,6 @@ use interface;
 use threads;
 use IO::Socket::UNIX;
 
-my %functionalities = ();
-
-$functionalities{"interface"} = threads->create(\&interface::interface);
-
-
-$functionalities{"interface"}->join();
+# Starts the daemon
+my $interface = threads->create(\&interface::interface);
+$interface->join();

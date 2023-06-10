@@ -13,18 +13,20 @@ use zipper;
 
 no warnings 'experimental';
 
+# Read the configuration file
 my $config = utils::read_config();
 
+# Parse the command
 sub parse {
-    my $connection = shift @_;
-    my $command = shift @_ || "";
-
-    my $help = "Usage: backup [COMMAND] [OPTIONS]\n" .
+    my $connection = shift @_;      # Connection to the daemon
+    my $command = shift @_ || "";   # Command to be parsed
+    my $help =  "Usage: backctl backup COMMAND [OPTIONS]\n\n" .
                 "Perform a backup for a selected user or lists all the backups for a selected user.\n" .
                 "Command: \n" .
                 "  ls\t\t\tList all the backups for a selected user\n" .
-                "  start\t\t\tStart a backup for a selected user\n";
+                "  start\t\t\tStart a backup for a selected user";
 
+    # Check the command
     switch ($command) {
         case "ls" {
             return ls(@_);
@@ -42,25 +44,34 @@ sub parse {
 
 }
 
+# List all the backups for a selected user
 sub ls {
-
-    my $help = "Usage: backup ls [OPTIONS]\n" .
+    my $help = "Usage: backctl backup ls [OPTIONS]\n\n" .
                 "List all the backups recorded in the system.\n" .
                 "Options: \n" .
-                "  -u, --user USER\t\tUser for which to list the backups\n";
+                "  -u, --user USER\t\tUser for which to list the backups";
+    
+    # Read the user configuration file
     my $json_data = utils::read_user_json();
+    
+    # Creates the table
     my $table = Text::ASCIITable->new({});
     $table->setCols("NAME", "DIRECTORIES", "DATES");
+    # User informations
     my %users = (names => [], ids => []);
 
+    # Parse the commands
     foreach my $command (@_) {
+        # Take the user
         if ($command =~ /^(-u|--user)$/) {
             shift @_; my $user = shift @_ || ""; chomp $user;
             if ($user eq "" || $user =~ /^-.*/) {
                 return $help;
             }
+            # Creates the users list
             @{$users{names}} = split ',', $user;
             for (my $i = 0; $i < scalar @{$users{names}}; $i++) {
+                # For each user, check if it exists and if it is a system user
                 my $exists = utils::user_exists($users{names}[$i]);
                 if ($users{names} =~ /^-.*/) {
                     return $help;
@@ -81,6 +92,8 @@ sub ls {
             return $help;
         }
     }
+
+    # If no user is specified, list all the users
     if (scalar @{$users{names}} == 0) {
         @{$users{names}} = keys $json_data->%*;
         for (my $i = 0; $i < scalar @{$users{names}}; $i++) {
@@ -88,11 +101,12 @@ sub ls {
             $users{ids}[$i] = `id -u $users{names}[$i]`;
         }
     }
-    @{$users{names}} = sort @{$users{names}};
-    @{$users{ids}} = sort @{$users{ids}};
+    #@{$users{names}} = sort @{$users{names}};
+    #@{$users{ids}} = sort @{$users{ids}};
     chomp @{$users{names}};
     chomp @{$users{ids}};
 
+    # For each user, prepare the table
     foreach (my $i = 0; $i < scalar @{$users{names}}; $i++) {
         my $user_dir = $config->{"BACKUP_DIR"} . ($config->{"BACKUP_DIR"} =~ /\/$/ ? "" : "/") . $users{ids}[$i]; chomp $user_dir;
         my @backups = `ls -t -l $user_dir | grep -v total | awk '{print \$9}'`; chomp @backups;
@@ -122,16 +136,18 @@ sub start {
     my $stop = 0;
     my @threads = ();
     my $ok = 0;
-
-    my $help = "Usage: backup start [OPTIONS]\n" .
+    my $help =  "Usage: backctl backup start [OPTIONS]\n\n" .
                 "Perform a backup for a selected list of users.\n" .
                 "Options: \n" .
-                "  -u, --user USER\t\tUser for which to perform the backup\n";
+                "  -u, --user USER\t\tUser for which to perform the backup";
 
+    # Parse the commands
     foreach my $command (@_) {
+        # Take the user
         if ($command =~ /^(-u|--user)$/) {
             shift @_; $user = shift @_;
             @users = split ',', $user;
+            # For each user, check if it exists and if it is a system user
             for (my $i = 0; $i < scalar @users; $i++) {
                 $users[$i] = `id -u $users[$i]`;
                 my $exists = utils::user_exists($users[$i]);
@@ -150,16 +166,19 @@ sub start {
             return $help;
         }
     }
+    # The user is mandatory
     if ($ok == 0) {
         return $help;
     }
     utils::send_message($connection, "Backup started. It may take a while, please wait...");
     my $time = time();
     $SIG{INT} = sub { utils::send_message($connection, "Backup interrupted. Back-a-la interrupted the connection", 1); };
+    # For each user, start a thread to perform the backup
     foreach my $user (@users) {
         push @threads, threads->create(\&zipper::zip, $user);
     }
 
+    # Wait for all the threads to finish
     while ($stop < scalar @threads) {
         foreach my $thread (@threads) {
             if ($thread->is_joinable()) {
@@ -170,6 +189,7 @@ sub start {
                     return "Backup failed for user $res[1] (encryption failed)";
                 } elsif ($res[0] == 3) {
                     return "Backup failed for user $res[1] (not enough memory in storage)";
+                    `notify-send -u critical "Back-a-la" "Backup failed for user $res[1] (not enough memory in storage)"`;
                 }
                 $stop++;
             } 
@@ -184,13 +204,15 @@ sub del {
     my $user = "";
     my $number = "";
     my @ok = (0, 0);
-    my $help = "Usage: backup del [OPTIONS]\n" .
+    my $help =  "Usage: backctl backup del [OPTIONS]\n\n" .
                 "Delete a backup for a selected user.\n" .
                 "Options: \n" .
                 "  -u, --user USER\t\tUser for which to delete the backup\n" .
-                "  -n, --number NUMBER\t\tNumber of the backup to delete\n";
+                "  -n, --number NUMBER\t\tNumber of the backup to delete";
 
+    # Parse the commands
     foreach my $command (@_) {
+        # Take the user
         if ($command =~ /^(-u|--user)$/) {
             shift @_; $user = shift @_; 
             $user = `id -u $user`; chomp $user;
@@ -206,6 +228,7 @@ sub del {
             }
             $ok[0] = 1;
         } elsif ($_[0] =~ /^(-n|--number)$/) {
+            # Take the number
             shift @_; $number = shift @_; chomp $number;
             if ($number eq "" || $number =~ /^-.*/) {
                 return $help;
@@ -218,7 +241,9 @@ sub del {
         }
     }
 
+    # The user and the number are mandatory
     if ($ok[0] && $ok[1]) {
+        # Delete the backup
         my $user_dir = $config->{"BACKUP_DIR"} . ($config->{"BACKUP_DIR"} =~ /\/$/ ? "" : "/") . $user;
         my @backups = split '\n', `ls $user_dir | sort -r`;
         unlink "$user_dir/$backups[--$number]";

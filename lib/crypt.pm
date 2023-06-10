@@ -10,7 +10,7 @@ use feature qw(say);
 
 my $config = utils::read_config();
 
-# Cifra un file con AES-256-CBC
+# Crypts a file with AES-256-CBC
 sub encrypt {
     my $name = shift;
     my $user = shift;
@@ -27,7 +27,7 @@ sub encrypt {
     return 0;
 }
 
-# Decifra un file con AES-256-CBC
+# Decryps a file with AES-256-CBC
 sub decrypt {
     my $name = shift;
     my $user = shift;
@@ -41,7 +41,7 @@ sub decrypt {
     return 0;
 }
 
-# Ottiene la passphrase per le chiavi RSA
+# Gets the passphrase for the RSA keys
 sub get_passphrase {
 
     open(my $file, '<', "/etc/back/keys/.master_key") or die $!;

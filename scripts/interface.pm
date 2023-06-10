@@ -20,6 +20,7 @@ $socket->autoflush;
 
 $SIG{TERM} = sub {};
 
+# Main loop
 sub interface {
     while (1) {
         my $connection = conn::accept_connection($socket);
@@ -28,6 +29,7 @@ sub interface {
 
 }
 
+# Handles a connection
 sub handle_connection {
     my $connection = shift;
     my $request = utils::receive_message($connection); chomp $request;
@@ -35,15 +37,17 @@ sub handle_connection {
     utils::send_message($connection, $response, 1);
 }
 
+# Handles a command received through the socket
 sub command_handler {
     my $connection = shift @_;
-    my $help = "Usage: backctl [OPTIONS]\n" .
+    my $help = "Usage: backctl [OPTIONS]\n\n" .
                "Options: \n" .
-               "  user\t\t\t\tManage users\n" .
                "  keygen\t\t\t\tGenerate new keys\n" .
+               "  user\t\t\t\tManage users\n" .
                "  backup\t\t\t\tPerform a backup fot a selected user\n" .
-               "  -h, --help\t\t\tShow this help message\n" .
-               "  -v, --version\t\t\tShow the version of the program\n";
+               "  restore\t\t\t\tPerform a restore of a backup for a selected user\n" .
+               "  set\t\t\t\tSet the period for automatic backups for a selected user\n" .
+               "  directory\t\t\t\tManage directories to be backed up for a selected user";
     if (scalar @_ == 0) {
         return $help;
     }
@@ -53,9 +57,6 @@ sub command_handler {
     my $stop = 0;
 
     switch ($command) {
-        case /^(-v|--version)$/ {
-            $response = "Back-a-la 0.1.0";
-        }
         case "user" {
             $response = commands::user::parse(@commands);
         }

@@ -5,7 +5,8 @@ use warnings;
 use JSON;
 use IO::Socket;
 
-sub prepare_send_message { # Parametri: messaggio,  ultimo
+# Prepares a message to be sent through the socket
+sub prepare_send_message { # Parameters: message, last
     my $message = shift;
     my $last = shift || 0;
     my $limit = 1024;
@@ -34,7 +35,8 @@ sub prepare_send_message { # Parametri: messaggio,  ultimo
     return @split_message;
 }
 
-sub receive_message { # Parametri: socket, limite
+# Receives a message through the socket
+sub receive_message { # Parameters: socket
     my $socket = shift || return undef;
     my $limit = 1024;
     my $response = "";
@@ -56,7 +58,8 @@ sub receive_message { # Parametri: socket, limite
 
 }
 
-sub send_message { # Parametri: socket, messaggio, ultimo
+# Sends a message through the socket
+sub send_message { # Parameters: socket, message, last
     my $socket = shift || return undef;
     my $message = shift || return undef;
     my $last = shift || 0;
@@ -72,6 +75,7 @@ sub send_message { # Parametri: socket, messaggio, ultimo
     return 0;
 }
 
+# Waits. Used for debugging
 sub wait {
     my $msg = shift || "Waiting...";
     while (1){
@@ -80,8 +84,8 @@ sub wait {
     }
 } 
 
+# Reads the users.json file and returns a hash with the users and their directories
 sub read_user_json {
-
     my $user = shift || "";
     chop $user;
     open(my $json_file, '<', '/etc/back/users.json') or return undef;
@@ -96,6 +100,7 @@ sub read_user_json {
     return $json_data;
 }
 
+# Checks if a user exists in the users.json file
 sub user_exists {
     my $user = shift || "";
     my $json_data = read_user_json();
@@ -117,6 +122,7 @@ sub user_exists {
     return 1;
 }
 
+# Reads the config file and returns a hash with the config
 sub read_config {
     my $config_file = "/etc/back/back.conf";
     my $config = {};

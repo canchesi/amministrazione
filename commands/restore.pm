@@ -16,20 +16,22 @@ sub restore {
     my $user = "";
     my $number = "";
     my @ok = (0, 0);
-    my $help = "Usage: restore [OPTIONS]\n" .
+    my $help =  "Usage: backctl restore [OPTIONS]\n\n" .
                 "Perform a restore of a backup for a selected user\n".
-                "from the 10 most recent backups.\n" .
-                "More recent backups will be removed.\n" .
+                "from the 10 most recent backups. More recent backups will be removed.\n" .
                 "Options: \n" .
                 "  -u, --user USER\t\tUser to restore backup for\n" .
                 "  -n, --number\t\tNumber of the backup to restore, based on the list of backups\n " .
-                "\t\t\tgiven by the \"backctl backup ls\" command\n";
+                "\t\t\t\tgiven by the \"backctl backup ls\" command";
 
+    # Parse options
     foreach my $command (@_) {
+        # Take the user
         if ($command =~ /^(-u|--user)$/) {
             shift @_; $user = shift @_; 
             $user = `id -u $user`; chomp $user;
             my $exists = utils::user_exists($user);
+            # Check if the user exists and if it is a system user
             if ($user eq "" || $user =~ /^-.*/) {
                 return $help;
             } elsif ($exists == 2) {
@@ -41,6 +43,7 @@ sub restore {
             }
             $ok[0] = 1;
         } elsif ($_[0] =~ /^(-n|--number)$/) {
+            # Take the number of the backup to restore
             shift @_; $number = shift @_; chomp $number;
             if ($number eq "" || $number =~ /^-.*/) {
                 return $help;
@@ -53,6 +56,7 @@ sub restore {
         }
     }
 
+    # User and number are mandatory
     if ($ok[0] && $ok[1]) {
         return restore_backup($connection, $user, $number);
     } else {
@@ -74,11 +78,13 @@ sub restore_backup {
         return "No backups found for user $user";
     }
 
+    # Decrypt and unzip the backup
     my $err = crypt::decrypt($backups[$number], $user);
     if ($err == 0) {
         $backups[$number] =~ s/\.enc//g;
         if (zip::extract($backups[$number], $user) == 0) {
             unlink "/tmp/." . $backups[$number];
+            # Remove older backups
             remove_older($user, $number);
             $SIG{INT} = sub {};
             return "Restore performed successfully";

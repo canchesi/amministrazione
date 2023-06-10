@@ -54,14 +54,15 @@ create_daemon:
 	@make reload							# Reload daemon
 
 uninstall:
-	@rm -rf /usr/local/bin/backctl				# Remove backctl
-	@rm -rf /usr/local/bin/backd				# Remove backd
+	@rm -f /usr/local/bin/backctl				# Remove backctl
+	@rm -f /usr/local/bin/backd				# Remove backd
 	@rm -rf /etc/back/					# Remove /etc/back directory
-	@rm -rf /var/run/back.sock				# Remove socket
+	@rm -f /var/run/back.sock				# Remove socket
 	@groupdel back						# Remove back group
 	@systemctl daemon-reload				# Reload daemon
 	@systemctl disable --now back.service			# Disable and stop daemon
-	@rm -rf /etc/systemd/system/back.service		# Remove back.service
+	@rm -f /etc/systemd/system/back.service		# Remove back.service
+	@rm -f /etc/cron.d/back-a-la				# Remove cron file
 	@echo "Uninstall complete."					
 
 reload:
