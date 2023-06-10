@@ -34,8 +34,8 @@ compile:
 
 install_dependencies:
 	@echo "Installing dependencies..."
-	@apt update && apt install -y libpar-packer-perl cpanminus cron perl  > /dev/null 2>&1		# Install dependencies
-	@cpanm Switch JSON Text::ASCIITable File::Slurp Thread File::Finder > /dev/null 2>&1		# Install dependencies
+	@apt update && apt install -y libpar-packer-perl ssed cpanminus cron perl openssl > /dev/null 2>&1	# Install dependencies
+	@cpanm Switch JSON Text::ASCIITable File::Slurp Thread File::Finder File::Find > /dev/null 2>&1		# Install dependencies
 	@echo "Dependencies installed."
 
 compile_client:

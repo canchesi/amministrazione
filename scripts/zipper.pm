@@ -10,7 +10,7 @@ my $config = utils::read_config();
 
 sub zip {
     my $user = shift || "";
-    my $user_dir = $config->{"BACKUP_DIR"} . ($config->{"BACKUP_DIR"} =~ /\/$/ ? "" : "/") . $user;
+    my $user_dir = $config->{"BACKUP_DIR"} . ($config->{"BACKUP_DIR"} =~ /\/$/ ? "" : "/") . $user; chomp $user_dir;
     my $json_data = undef;
 
     $json_data = utils::read_user_json($user);
@@ -25,7 +25,7 @@ sub zip {
             return (3, $user);
         } else {
             chomp $user;
-            if (`ls $user_dir | wc -l` > 10) {
+            if (`ls $user_dir | wc -l` + 0 > 10) {
                 my @backups = `ls $user_dir`;
                 sort @backups;
                 `rm $user_dir/$backups[0]`;

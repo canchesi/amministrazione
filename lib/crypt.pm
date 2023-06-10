@@ -16,14 +16,14 @@ sub encrypt {
     my $user = shift;
     my $dir_dim = `df -B1 /tmp | tail -1 | awk '{print \$4}'`; chomp $dir_dim;
     my $file_dim = `du -b /tmp/.$name | awk '{print \$1}'`; chomp $file_dim;
-    if ($dir_dim <= $file_dim) {
+    if ($dir_dim + 0 <= $file_dim + 0) {
         return 2;
     }
     my $dir = $config->{"BACKUP_DIR"} . ($config->{"BACKUP_DIR"} =~ /\/$/ ? "" : "/") . `id -u $user`; chomp $dir;
     if (system("openssl enc -aes-256-cbc -pbkdf2 -in /tmp/." . $name . " -out " . $dir . "/" . $name . ".enc -pass pass:" . get_passphrase()) != 0) {
         return 1;
     }
-    unlink $name;
+    unlink "/tmp/.".$name;
     return 0;
 }
 
@@ -32,7 +32,6 @@ sub decrypt {
     my $name = shift;
     my $user = shift;
     my $dir = $config->{"BACKUP_DIR"} . ($config->{"BACKUP_DIR"} =~ /\/$/ ? "" : "/") . `id -u $user`; chomp $dir;
-
     if (! -f $dir . "/" . $name) {
         return 2;
     }

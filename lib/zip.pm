@@ -21,6 +21,7 @@ sub make {
     foreach my $elem (@date[0..4]) {
         $name .= $elem . "-"
     }
+    print @date;
     $name .= $date[5];
     if ($archive->writeToFileNamed("/tmp/.$name.zip") == 0) {
         return $name.".zip";
