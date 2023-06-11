@@ -10,7 +10,7 @@ no warnings 'experimental';
 
 sub set {
     my $help =  "Usage: backctl set [OPTIONS]\n\n" .
-                "Activate backup for a user.\n" .
+                "Set the period for a user's automatic backup.\n" .
                 "  -u, --user USER\t\t\tUser to set the backup period for\n" .
                 "  -t, --time TIME\t\t\tSet the backup period in cron format";
     my $user = "";

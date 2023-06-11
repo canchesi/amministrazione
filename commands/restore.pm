@@ -85,7 +85,7 @@ sub restore_backup {
         if (zip::extract($backups[$number], $user) == 0) {
             unlink "/tmp/." . $backups[$number];
             # Remove older backups
-            remove_older($user, $number);
+            remove_newer($user, $number);
             $SIG{INT} = sub {};
             return "Restore performed successfully";
         } else {
@@ -101,7 +101,7 @@ sub restore_backup {
 
 }
 
-sub remove_older {
+sub remove_newer {
     my $user_dir = $config->{"BACKUP_DIR"} . ($config->{"BACKUP_DIR"} =~ /\/$/ ? "" : "/") . shift @_;
     my $number = shift @_;
     my @backups = split '\n', `ls $user_dir | sort -r`;

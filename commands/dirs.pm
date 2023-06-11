@@ -10,7 +10,7 @@ use utils;
 no warnings 'experimental';
 
 sub directory {
-    my $help =  "Usage: backctl directory COMMAND [OPTIONS]\n\n" .
+    my $help =  "Usage: backctl directory COMMAND [OPTIONS] DIR\n\n" .
                 "Commands: \n" .
                 "  add DIRECTORIES\tAdd a directory to the list of directories to be backed up\n" .
                 "  del DIRECTORIES\tDelete a directory from the list of directories to be backed up\n" .

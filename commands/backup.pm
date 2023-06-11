@@ -24,7 +24,8 @@ sub parse {
                 "Perform a backup for a selected user or lists all the backups for a selected user.\n" .
                 "Command: \n" .
                 "  ls\t\t\tList all the backups for a selected user\n" .
-                "  start\t\t\tStart a backup for a selected user";
+                "  start\t\t\tStart a backup for a selected user" .
+		"  del\t\t\tDelete a backup for a selected user";
 
     # Check the command
     switch ($command) {
