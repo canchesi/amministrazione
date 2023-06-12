@@ -146,7 +146,7 @@ sub add {
         $json_data->{$user_id} = {
             "directories" => [],
             "active" => "false",
-            "period" => "0 0 * * *"
+            "period" => $config->{'DEFAULT_PERIOD'}
         };
         open(my $json_file, '>', '/etc/back/users.json') or die $!;
         print $json_file JSON->new->ascii->pretty->encode($json_data);

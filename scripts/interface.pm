@@ -54,7 +54,6 @@ sub command_handler {
     my @commands = split / /, $_[0];
     my $command = shift @commands;
     my $response = undef;
-    my $stop = 0;
 
     switch ($command) {
         case "user" {

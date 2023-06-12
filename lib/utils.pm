@@ -12,7 +12,6 @@ sub prepare_send_message { # Parameters: message, last
     my $limit = 1024;
     my $length = length($message);
     my $is_end = 0;
-    my $almost_end = 0;
     my @split_message = ();
     
     while ($length+7 > $limit && !$is_end) {

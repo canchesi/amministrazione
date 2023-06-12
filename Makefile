@@ -5,6 +5,7 @@ install:
 	@make create_necessary				# Create necessary files
 	@make create_daemon				# Create daemon
 	@make compile					# Compile backctl and backd
+	@systemctl enable --now back.service		# Enable and start daemon
 	@echo ""
 	@echo "Installation complete."
 	@echo "#############"
@@ -44,7 +45,7 @@ compile:
 
 install_dependencies:
 	@echo "Installing dependencies..."
-	@apt update && apt install -y libpar-packer-perl ssed cpanminus cron perl > /dev/null 2>&1	# Install dependencies
+	@apt update && apt install -y libpar-packer-perl ssh ssed cpanminus cron perl > /dev/null 2>&1	# Install dependencies
 	@cpanm Switch JSON Text::ASCIITable File::Slurp Thread File::Finder File::Find > /dev/null 2>&1	# Install dependencies
 	@echo "Dependencies installed."
 
