@@ -171,6 +171,7 @@ sub start {
     if ($ok == 0) {
         return $help;
     }
+
     utils::send_message($connection, "Backup started. It may take a while, please wait...");
     my $time = time();
     $SIG{INT} = sub { utils::send_message($connection, "Backup interrupted. Back-a-la interrupted the connection", 1); };

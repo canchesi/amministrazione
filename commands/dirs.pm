@@ -35,6 +35,7 @@ sub directory {
         return $help;
     }
 
+    # Checks if the user exists
     my $user_id = `grep '^$user:' /etc/passwd | cut -d ':' -f 3`;
     if ($user_id eq "") {
         return "User does not exist in the system";

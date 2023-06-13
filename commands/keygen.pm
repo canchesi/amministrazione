@@ -60,7 +60,7 @@ sub keygen {
 
     if (length $keys_info{"Passphrase"} < 5 && $keys_info{"Passphrase"} ne "") {
         utils::send_message($connection, "Passphrase too short. Minimum five characters", 1);
-        return "1";
+        return;
     }
 
 

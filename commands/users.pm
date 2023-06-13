@@ -76,6 +76,7 @@ sub parse {
     }
 }
 
+# Lists all the users for which a backup is or can be performed
 sub ls {
     # Requires no arguments
     if (scalar(@_)) {
@@ -87,7 +88,6 @@ sub ls {
     my @ids = ();
     my $json_data = utils::read_user_json();
     my $table = Text::ASCIITable->new({});
-    my $quiet = undef;
 
     # Prepare the table
     $table->setCols("USER", "NAME", "DIRECTORIES", "CRON", "ACTIVE");
@@ -100,9 +100,13 @@ sub ls {
     
     # Add the users to the table
     foreach my $user (@ids) {
+        # Takes the directories from the configuration file
         my $directories = join("\n", $json_data->{$user}->{"directories"}->@*);
+        # Takes the period from the configuration file
         my $period = $json_data->{$user}->{"period"};
+        # Takes the user name from the system
         my $name = `grep 'x:$user:' /etc/passwd | cut -d ':' -f 1`;
+        # Add row to the table
         $table->addRow($user, $name, $directories, $period, $json_data->{$user}->{"active"});
         $table->addRowLine();
     }
@@ -110,15 +114,15 @@ sub ls {
     return $table;
 }
 
+# Adds a user to the list of users for which a backup is or can be performed
 sub add {
     my $user = shift @_ || "";
     my $help =  "Usage: backctl user add USER\n\n" .
                 "Add a user to the list of users for which a backup is or can be performed.\n" .
                 "It does not accept any option.";
-    my $not_exist = undef;
     my $json_data = utils::read_user_json();
 
-    # Requires no arguments
+    # Requires no arguments (check if the user is a flag)
     if ($user =~ /^-.*/) {
         return $help;
     }
@@ -140,6 +144,7 @@ sub add {
     if (exists $json_data->{$user_id}) {
         return 4;  
     } elsif (system("echo '#" . $config->{'DEFAULT_PERIOD'} . " root backctl backup start -u $user\n' >> /etc/cron.d/back-a-la") != 0) {
+        # Add the cron configuration
         return 5;
     } else { 
         # Add the user to the Back-a-la system
@@ -184,6 +189,7 @@ sub del {
     if (! exists $json_data->{$user_id}) {
         return 3;
     } elsif (system("sed -i '/$user/,+1d' /etc/cron.d/back-a-la;") != 0) {
+        # Remove the cron configuration
         return 5;
     } else {
         # Delete the user from the Back-a-la system
